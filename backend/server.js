@@ -394,6 +394,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Import Routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const resourceRoutes = require('./routes/resources');
+const moduleRoutes = require('./routes/modules');
+const aiRoutes = require('./routes/ai');
 
 // Placeholder for unimplemented routes
 const toBeImplemented = (req, res) => {
@@ -407,16 +410,19 @@ const toBeImplemented = (req, res) => {
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/resources', resourceRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Unimplemented Routes (Placeholders)
 app.use('/api/sessions', toBeImplemented);
-app.use('/api/resources', toBeImplemented);
 app.use('/api/groups', toBeImplemented);
 app.use('/api/posts', toBeImplemented);
 app.use('/api/reviews', toBeImplemented);
-app.use('/api/modules', toBeImplemented);
-app.use('/api/ai', toBeImplemented);
 app.use('/api/session-requests', toBeImplemented);
+
+
+
 
 
 // Root route

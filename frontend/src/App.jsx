@@ -44,9 +44,10 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/sessions" element={<Sessions />} />
-            <Route path="/resources" element={<Resources />} />
+            <Route path="/resources" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
             <Route path="/groups" element={<Groups />} />
           </Route>
+
           
           {/* Default & 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
