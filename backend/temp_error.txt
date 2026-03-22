@@ -1,0 +1,58 @@
+﻿node : === UNCAUGHT 
+EXCEPTION ===
+At line:1 char:1
++ node server.js 2>&1 
+| Out-File -FilePath 
+temp_error.txt 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (=== UNCAUGHT    
+ EXCEPTION ===:Stri    
+ng) [], RemoteExce    
+ption
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Error: listen 
+EADDRINUSE: address 
+already in use :::5000
+Stack: Error: listen 
+EADDRINUSE: address 
+already in use :::5000
+    at Server.setupList
+enHandle [as _listen2] 
+(node:net:1939:16)
+    at listenInCluster 
+(node:net:1996:12)
+    at Server.listen 
+(node:net:2101:7)
+    at Function.listen 
+(C:\Users\ROG\Desktop\p
+2p-platform\backend\nod
+e_modules\express\lib\a
+pplication.js:635:24)
+    at 
+Object.<anonymous> (C:\
+Users\ROG\Desktop\p2p-p
+latform\backend\server.
+js:587:20)
+    at Module._compile 
+(node:internal/modules/
+cjs/loader:1734:14)
+    at Object..js (node
+:internal/modules/cjs/l
+oader:1899:10)
+    at Module.load (nod
+e:internal/modules/cjs/
+loader:1469:32)
+    at Function._load (
+node:internal/modules/c
+js/loader:1286:12)
+    at TracingChannel.t
+raceSync (node:diagnost
+ics_channel:322:14)
+=======================
+===
