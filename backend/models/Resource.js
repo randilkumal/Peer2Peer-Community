@@ -1,142 +1,48 @@
-// const mongoose = require('mongoose');
-
-// const resourceSchema = new mongoose.Schema({
-//   title: {
-//     type: String,
-//     required: true,
-//     trim: true
-//   },
-//   description: {
-//     type: String,
-//     required: true
-//   },
-//   module: {
-//     type: String,
-//     required: true
-//   },
-  
-//   // Academic Context
-//   academicYear: Number,
-//   period: {
-//     type: String,
-//     enum: ['Jan-May', 'Jun-Nov']
-//   },
-//   yearLevel: Number,
-  
-//   // Resource Details
-//   resourceType: {
-//     type: String,
-//     enum: ['Notes', 'Assignment', 'Past Paper', 'Other'],
-//     required: true
-//   },
-//   tags: [String],
-  
-//   // File
-//   filePath: {
-//     type: String,
-//     required: true
-//   },
-//   fileName: String,
-//   fileSize: Number,
-//   fileType: String, // application/pdf, etc.
-  
-//   // Uploader
-//   uploadedBy: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'User',
-//     required: true
-//   },
-  
-//   // Status
-//   status: {
-//     type: String,
-//     enum: ['pending', 'approved', 'rejected'],
-//     default: 'pending'
-//   },
-//   rejectionReason: String,
-  
-//   // Ratings
-//   averageRating: {
-//     type: Number,
-//     default: 0,
-//     min: 0,
-//     max: 5
-//   },
-//   totalRatings: {
-//     type: Number,
-//     default: 0
-//   },
-  
-//   // Analytics
-//   downloadCount: {
-//     type: Number,
-//     default: 0
-//   },
-//   viewCount: {
-//     type: Number,
-//     default: 0
-//   },
-  
-//   // Metadata
-//   createdAt: {
-//     type: Date,
-//     default: Date.now
-//   },
-//   updatedAt: {
-//     type: Date,
-//     default: Date.now
-//   }
-// }, {
-//   timestamps: true
-// });
-
-// // Index for efficient querying
-// resourceSchema.index({ status: 1, module: 1, yearLevel: 1 });
-// resourceSchema.index({ uploadedBy: 1 });
-// resourceSchema.index({ tags: 1 });
-
-// module.exports = mongoose.model('Resource', resourceSchema);
-
-
-
 const mongoose = require('mongoose');
 
 const resourceSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Please add a title'],
-    trim: true
+    required: [true, 'Title is required'],
+    trim: true,
+    maxlength: [200, 'Title cannot exceed 200 characters']
   },
   description: {
     type: String,
+    trim: true,
     default: ''
   },
   type: {
     type: String,
-    enum: ['Lecture Notes', 'Assignments', 'Past Papers', 'Textbooks', 'Other'],
-    required: true
+    enum: ['Lecture Notes', 'Past Papers', 'Assignments', 'Textbooks', 'Study Guides', 'Other'],
+    default: 'Other'
   },
   moduleCode: {
     type: String,
-    required: [true, 'Please specify the module']
+    required: [true, 'Module code is required'],
+    trim: true,
+    uppercase: true
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   fileUrl: {
     type: String,
     required: true
   },
   fileName: {
-    type: String
+    type: String,
+    required: true
   },
   fileSize: {
-    type: Number
+    type: Number,
+    default: 0
   },
   fileType: {
-    type: String
-  },
-  uploadedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    type: String,
+    default: ''
   },
   status: {
     type: String,
@@ -144,17 +50,8 @@ const resourceSchema = new mongoose.Schema({
     default: 'pending'
   },
   rejectionReason: {
-    type: String
-  },
-  averageRating: {
-    type: Number,
-    min: 0,
-    max: 5,
-    default: 0
-  },
-  ratingCount: {
-    type: Number,
-    default: 0
+    type: String,
+    default: null
   },
   downloads: {
     type: Number,
@@ -164,18 +61,29 @@ const resourceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // NEW: Track who downloaded
-  downloadedBy: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    downloadedAt: {
-      type: Date,
-      default: Date.now
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  ratingCount: {
+    type: Number,
+    default: 0
+  },
+  ratings: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      rating: { type: Number, min: 1, max: 5 },
+      ratedAt: { type: Date, default: Date.now }
     }
-  }],
-  tags: [String],
+  ],
+  downloadedBy: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      downloadedAt: { type: Date, default: Date.now }
+    }
+  ],
   metadata: {
     fileSize: Number,
     fileType: String
@@ -185,6 +93,9 @@ const resourceSchema = new mongoose.Schema({
 });
 
 // Index for search
-resourceSchema.index({ title: 'text', description: 'text', tags: 'text' });
+resourceSchema.index({ title: 'text', description: 'text', moduleCode: 'text' });
+resourceSchema.index({ status: 1, moduleCode: 1 });
+resourceSchema.index({ uploadedBy: 1, status: 1 });
+resourceSchema.index({ 'downloadedBy.user': 1 });
 
 module.exports = mongoose.model('Resource', resourceSchema);

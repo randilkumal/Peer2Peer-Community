@@ -1,29 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const { protect } = require('../middleware/auth');
-// const {
-//   getModules,
-//   getModuleByCode
-// } = require('../controllers/moduleController');
-
-// // Debug middleware
-// router.use((req, res, next) => {
-//   console.log(`[Modules Route] ${req.method} ${req.url}`);
-//   next();
-// });
-
-// // All routes are protected
-// router.use(protect);
-
-// // Get all modules
-// router.get('/', getModules);
-
-// // Get single module
-// router.get('/:code', getModuleByCode);
-
-// module.exports = router;
-
-
 
 const express = require('express');
 const router = express.Router();
