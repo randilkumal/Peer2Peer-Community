@@ -178,7 +178,7 @@ const SessionDetail = () => {
       return <Badge variant="success">You're Joined</Badge>;
     }
     if (hasPendingRequest()) {
-      return <Badge variant="warning">Request Pending</Badge>;
+      return <Badge variant="warning">Requested</Badge>;
     }
     return <Badge variant="info">Open for Registration</Badge>;
   };
@@ -226,7 +226,10 @@ const SessionDetail = () => {
         <Button 
           variant="ghost" 
           icon={ArrowLeft}
-          onClick={() => navigate('/student/sessions')}
+          onClick={() => {
+            if (user?.role === 'expert') navigate('/expert/joined-sessions');
+            else navigate('/student/sessions');
+          }}
           className="mb-6"
         >
           Back to Sessions
@@ -395,7 +398,7 @@ const SessionDetail = () => {
                     disabled
                     fullWidth
                   >
-                    Request Pending
+                    Requested
                   </Button>
                 )}
 

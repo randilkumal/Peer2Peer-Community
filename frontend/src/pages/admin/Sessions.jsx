@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import API from '../../utils/api';
 import {
   Calendar,
@@ -42,6 +43,8 @@ const AdminSessions = () => {
     sessionRequestHistory: []
   });
   const [modules, setModules] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState(null);
 
   useEffect(() => {
     fetchSessions();
@@ -54,6 +57,20 @@ const AdminSessions = () => {
       setModules(res.data.modules || []);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!requestToDelete) return;
+    try {
+      await API.delete(`/session-requests/${requestToDelete._id}`);
+      toast.success('Session request deleted successfully');
+      fetchSessions();
+    } catch (e) {
+      toast.error('Failed to delete session request');
+    } finally {
+      setDeleteModalOpen(false);
+      setRequestToDelete(null);
     }
   };
 
@@ -225,6 +242,16 @@ const AdminSessions = () => {
                           Mark as seen
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => {
+                          setRequestToDelete(req);
+                          setDeleteModalOpen(true);
+                        }}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -325,6 +352,18 @@ const AdminSessions = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setRequestToDelete(null);
+        }}
+        title="Delete Session Request"
+        message="Are you sure you want to delete this session request? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleDeleteRequest}
+      />
     </DashboardLayout>
   );
 };

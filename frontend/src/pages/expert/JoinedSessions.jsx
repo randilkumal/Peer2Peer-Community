@@ -202,24 +202,24 @@ const ExpertJoinedSessions = () => {
     return list;
   };
 
-  const isUserRequested = (session) => {
+  const getUserSessionStatus = (session) => {
     const safeId = String(user?._id);
-    const hasPendingReq = session.pendingRequests?.some(
-      r => {
-        const rUserId = r.user?._id || r.user;
-        return rUserId && String(rUserId) === safeId && r.status === 'pending';
-      }
-    );
+    
     const sExpertId = session.expert?._id || session.expert;
-    const isAlreadyAssignedExpert = sExpertId && String(sExpertId) === safeId;
+    if (sExpertId && String(sExpertId) === safeId) return 'conducting';
     
-    const isAlreadyParticipant = session.participants?.some(p => {
-      const pId = p?._id || p;
-      return pId && String(pId) === safeId;
-    });
+    const isParticipant = session.participants?.some(p => String(p?._id || p) === safeId);
+    if (isParticipant) return 'joined';
     
-    return hasPendingReq || isAlreadyAssignedExpert || isAlreadyParticipant;
+    const myRequest = session.pendingRequests?.find(r => 
+      String(r.user?._id || r.user) === safeId && r.status === 'pending'
+    );
+    if (myRequest) return myRequest.role === 'expert' ? 'requested_expert' : 'requested_student';
+    
+    return null;
   };
+
+  const isUserRequested = (session) => !!getUserSessionStatus(session);
 
   const SessionCard = ({ session, showJoinButtons = false }) => (
     <Card
@@ -272,9 +272,10 @@ const ExpertJoinedSessions = () => {
               </Button>
             </>
           )}
-          {isUserRequested(session) && (
-            <Badge variant="warning">Request Pending</Badge>
-          )}
+          {getUserSessionStatus(session) === 'conducting' && <Badge variant="success">You're Conducting</Badge>}
+          {getUserSessionStatus(session) === 'joined' && <Badge variant="success">Joined</Badge>}
+          {getUserSessionStatus(session) === 'requested_expert' && <Badge variant="warning">Requested to Conduct</Badge>}
+          {getUserSessionStatus(session) === 'requested_student' && <Badge variant="warning">Requested to Join</Badge>}
         </div>
       )}
     </Card>

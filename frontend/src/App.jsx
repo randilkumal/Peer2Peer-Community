@@ -17,6 +17,19 @@ import Sessions from './pages/student/Sessions'
 import Resources from './pages/student/Resources'
 import Groups from './pages/student/Groups'
 
+// Session pages
+import AdminSessions from './pages/admin/Sessions'
+import AdminSessionDetail from './pages/admin/SessionDetail'
+import AdminCreateSession from './pages/admin/CreateSession'
+import AdminEditSessionDetails from './pages/admin/EditSessionDetails'
+
+import StudentSessions from './pages/student/Sessions'
+import StudentSessionDetail from './pages/student/SessionDetail'
+
+import ExpertSessionHistory from './pages/expert/SessionHistory'
+import ExpertJoinedSessions from './pages/expert/JoinedSessions'
+import ExpertConductedSessions from './pages/expert/ConductedSessions'
+
 function App() {
   return (
     <AuthProvider>
@@ -43,9 +56,30 @@ function App() {
           {/* Main App Routes (Protected) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/sessions" element={<Sessions />} />
             <Route path="/resources" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
             <Route path="/groups" element={<Groups />} />
+            
+            {/* Admin Sessions */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin/sessions" element={<AdminSessions />} />
+              <Route path="/admin/sessions/create" element={<AdminCreateSession />} />
+              <Route path="/admin/sessions/:id" element={<AdminSessionDetail />} />
+              <Route path="/admin/sessions/:id/edit" element={<AdminEditSessionDetails />} />
+            </Route>
+
+            {/* Student Sessions */}
+            <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+              <Route path="/student/sessions" element={<StudentSessions />} />
+              <Route path="/student/sessions/:id" element={<StudentSessionDetail />} />
+            </Route>
+
+            {/* Expert Sessions */}
+            <Route element={<ProtectedRoute allowedRoles={['expert']} />}>
+              <Route path="/expert/session-history" element={<ExpertSessionHistory />} />
+              <Route path="/expert/joined-sessions" element={<ExpertJoinedSessions />} />
+              <Route path="/expert/conducted-sessions" element={<ExpertConductedSessions />} />
+              <Route path="/expert/sessions/:id" element={<StudentSessionDetail />} />
+            </Route>
           </Route>
 
           
