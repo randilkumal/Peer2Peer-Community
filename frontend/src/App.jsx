@@ -2,19 +2,16 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
-import PublicLayout from './components/layout/PublicLayout'
-
-// Public landing pages
-import Home from './pages/public/Home'
 
 // Auth pages
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
 
-// Dashboard page
+// Student pages (implemented)
 import Dashboard from './pages/student/Dashboard'
-import Sessions from './pages/student/Sessions'
 import Resources from './pages/student/Resources'
+
+// Placeholder pages (to be implemented)
+import Sessions from './pages/student/Sessions'
 import Groups from './pages/student/Groups'
 
 function App() {
@@ -33,29 +30,29 @@ function App() {
         />
         
         <Routes>
-          {/* Public Landing Page */}
-          <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+          {/* Default: redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          {/* Register: redirect to login (to be implemented) */}
+          <Route path="/register" element={<Navigate to="/login" replace />} />
           
           {/* Main App Routes (Protected) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/resources" element={<Resources />} />
+            {/* Placeholder routes */}
             <Route path="/sessions" element={<Sessions />} />
-            <Route path="/resources" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
             <Route path="/groups" element={<Groups />} />
           </Route>
 
-          
-          {/* Default & 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 → login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   )
 }
-
 
 export default App
