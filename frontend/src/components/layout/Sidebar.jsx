@@ -27,16 +27,50 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  // Navigation links for all users
+  // Navigation links based on role
   const getNavigationLinks = () => {
-    return [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/sessions', icon: Calendar, label: 'Sessions' },
-      { to: '/resources', icon: FileText, label: 'Resources' },
-      { to: '/groups', icon: Users, label: 'Groups' },
-    ];
-  };
+    if (!user) return [];
 
+    const baseLinks = {
+      student: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/profile', icon: User, label: 'Profile' },
+        { to: '/student/sessions', icon: Calendar, label: 'Sessions' },
+        { to: '/resources', icon: FileText, label: 'Resources' },
+        { to: '/groups', icon: Users, label: 'Groups' },
+        { to: '/chat', icon: MessageSquare, label: 'Chat' },
+        { to: '/settings', icon: Settings, label: 'Settings' },
+      ],
+      expert: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/profile', icon: User, label: 'Profile' },
+        { to: '/expert/joined-sessions', icon: Calendar, label: 'Sessions' },
+        { to: '/resources', icon: FileText, label: 'Resources' },
+        { to: '/groups', icon: Users, label: 'Groups' },
+        { to: '/chat', icon: MessageSquare, label: 'Chat' },
+        { to: '/settings', icon: Settings, label: 'Settings' },
+      ],
+      lecturer: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/profile', icon: User, label: 'Profile' },
+        { to: '/groups', icon: Users, label: 'Groups' },
+        { to: '/modules', icon: BookOpen, label: 'Modules' },
+        { to: '/settings', icon: Settings, label: 'Settings' },
+      ],
+      admin: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/users', icon: Users, label: 'Users' },
+        { to: '/expert-queue', icon: UserCheck, label: 'Approval Queue' },
+        { to: '/admin/sessions', icon: Calendar, label: 'Sessions' },
+        { to: '/resources', icon: FileText, label: 'Resources' },
+        { to: '/groups', icon: Shield, label: 'Groups' },
+        { to: '/feed', icon: MessageSquare, label: 'Feed' },
+        { to: '/settings', icon: Settings, label: 'Settings' },
+      ],
+    };
+
+    return baseLinks[user.role] || [];
+  };
 
   const navigationLinks = getNavigationLinks();
   const isActive = (path) => location.pathname === path;
@@ -58,30 +92,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* User Info */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-            {user.profilePicture ? (
-              <img 
-                src={user.profilePicture} 
-                alt={user.fullName}
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              <span className="text-primary-600 font-semibold text-sm">
-                {user.fullName?.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user.fullName}
-            </p>
-            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-          </div>
-        </div>
-      </div>
+
 
       {/* Navigation Links */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

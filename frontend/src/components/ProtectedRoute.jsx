@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Loader from './common/Loader';
+import Loader from '../components/common/Loader';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useAuth();
@@ -32,4 +32,4 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children ? children : <Outlet />;
 };
 
-export default ProtectedRoute;
+export default ProtectedRoute;
