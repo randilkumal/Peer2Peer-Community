@@ -14,37 +14,52 @@ import {
   FileText,
   Download,
   Upload,
+  Star,
   Search,
+  Sparkles,
+  History,
   File,
+  FileArchive,
+  FileSpreadsheet,
   X,
+  Eye,
+  Trash2,
   Clock,
   CheckCircle,
-  XCircle,
-  Filter,
-  History,
-  Sparkles
+  XCircle
 } from 'lucide-react';
-
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
-const Resources = () => {
+const StudentResources = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [resources, setResources] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadLoading, setUploadLoading] = useState(false);
-
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [showModuleDropdown, setShowModuleDropdown] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+  
   // Filters
   const [filters, setFilters] = useState({
     module: '',
     resourceType: '',
     sortBy: 'newest'
   });
+
+  const [resources, setResources] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [enrolledModules, setEnrolledModules] = useState([]);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [ratingSubmitLoading, setRatingSubmitLoading] = useState(false);
 
   // Upload form
   const [uploadForm, setUploadForm] = useState({
@@ -56,33 +71,471 @@ const Resources = () => {
   });
 
   const resourceTypes = ['Lecture Notes', 'Assignments', 'Past Papers', 'Textbooks', 'Other'];
-  const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [loadingAI, setLoadingAI] = useState(false);
 
-  // MOCK DATA
-  const MOCK_MODULES = [
-    { code: 'CS101', name: 'Introduction to Computer Science' },
-    { code: 'CS102', name: 'Programming Fundamentals' },
-    { code: 'CS201', name: 'Data Structures & Algorithms' },
-    { code: 'EE101', name: 'Basic Electronics' },
-    { code: 'MA101', name: 'Calculus I' }
-  ];
+  const getModuleName = (code) => {
+    const module = modules.find(m => m.code === code);
+    return module ? module.name : '';
+  };
 
-  const MOCK_RESOURCES = [
-    { _id: '1', title: 'Data Structures Complete Notes', moduleCode: 'CS201', resourceType: 'Lecture Notes', description: 'Comprehensive guide to all data structures used in modern computing.', uploader: { fullName: 'Alex Johnson' }, createdAt: new Date().toISOString(), status: 'approved', downloadCount: 45 },
-    { _id: '2', title: 'Logic Gates Lab Report', moduleCode: 'EE101', resourceType: 'Assignments', description: 'Solved assignment for the physical electronics lab conducted in week 4.', uploader: { fullName: 'Sarah Smith' }, createdAt: new Date().toISOString(), status: 'approved', downloadCount: 12 },
-    { _id: '3', title: 'Programming Fundamentals Past Paper 2023', moduleCode: 'CS102', resourceType: 'Past Papers', description: 'Final examination paper from the 2023 spring semester.', uploader: { fullName: 'Michael Chen' }, createdAt: new Date().toISOString(), status: 'approved', downloadCount: 156 },
-    { _id: '4', title: 'Calculus I Workbook', moduleCode: 'MA101', resourceType: 'Textbooks', description: 'Problem set and theory for limits and derivatives.', uploader: { fullName: 'Emma Wilson' }, createdAt: new Date().toISOString(), status: 'approved', downloadCount: 89 }
-  ];
+  useEffect(() => {
+    if (user?._id) {
+      console.log('✅ User loaded, fetching resources for user:', user._id);
+      fetchResources();
+      fetchModules();
+      loadEnrolledModules();
+    } else {
+      console.log('⏳ Waiting for user to load...');
+    }
+  }, [activeTab, filters, user]); // Change from user?._id to user
 
-  const MOCK_HISTORY = [
-    { _id: '5', title: 'Python Basics Cheat Sheet', moduleCode: 'CS102', resourceType: 'Lecture Notes', description: 'Quick reference for syntax and common libraries.', uploader: { fullName: 'System Admin' }, createdAt: new Date().toISOString(), status: 'approved', downloadCount: 1024 }
-  ];
+  // AI Suggestions when search changes
+  useEffect(() => {
+    if (searchQuery && searchQuery.length > 2 && activeTab === 'ai-suggestions') {
+      fetchAISuggestions();
+    }
+  }, [searchQuery, activeTab]);
 
-  const MOCK_AI_SUGGESTIONS = [
-    { title: 'Advanced Algorithms Deep Dive', moduleCode: 'CS201', type: 'Lecture Notes', relevance: 98, description: 'AI-generated recommendation based on your interest in Data Structures.' },
-    { title: 'Discrete Math for Computer Science', moduleCode: 'MA101', type: 'Textbook', relevance: 85, description: 'Found in the library as highly relevant to your recent searches.' }
-  ];
+  // Load full module objects for the student's enrolledModules list
+  const loadEnrolledModules = async () => {
+    try {
+      const codes = user?.enrolledModules || [];
+      if (!codes.length) {
+        setEnrolledModules([]);
+        return;
+      }
+      const response = await API.get('/modules');
+      const allModules = response.data.modules || [];
+      const myModules = allModules.filter((m) => codes.includes(m.code));
+      setEnrolledModules(myModules);
+    } catch (error) {
+      console.error('Error loading enrolled modules for resources:', error);
+      setEnrolledModules([]);
+    }
+  };
+
+  const fetchModules = async () => {
+    try {
+      const response = await API.get('/modules');
+      setModules(response.data.modules || []);
+    } catch (error) {
+      console.error('Error fetching modules:', error);
+    }
+  };
+
+  const fetchResources = async () => {
+  try {
+    setLoading(true);
+    
+    if (!user?._id) {
+      console.log('⏳ User ID not available yet');
+      setLoading(false);
+      return;
+    }
+    
+    let endpoint = '/resources?';
+
+    if (activeTab === 'my-uploads') {
+      // My Uploads tab - show user's resources (all statuses)
+      endpoint += `uploader=${user._id}&`;
+      console.log('📤 Fetching my uploads for user:', user._id);
+    } else if (activeTab === 'history') {
+      // History tab - show downloaded resources
+      endpoint = '/resources/my-downloads?';
+      console.log('📜 Fetching download history');
+    } else if (activeTab === 'ai-suggestions') {
+      setResources([]);
+      setLoading(false);
+      return;
+    } else {
+      // All Resources tab - IMPORTANT: Add status=approved parameter
+      endpoint += 'status=approved&';
+      console.log('🌐 Fetching all approved resources');
+    }
+
+    // Add filters
+    if (filters.module) endpoint += `module=${filters.module}&`;
+    if (filters.resourceType) endpoint += `type=${filters.resourceType}&`;
+    if (filters.sortBy) endpoint += `sort=${filters.sortBy}&`;
+
+    console.log('🔍 API Request:', endpoint);
+    const response = await API.get(endpoint);
+    console.log('✅ Resources received:', response.data.resources?.length || 0);
+    setResources(response.data.resources || []);
+  } catch (err) {
+    console.error('Error fetching resources:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const fetchAISuggestions = async () => {
+    try {
+      setLoadingAI(true);
+      const response = await API.get(`/ai/suggest-resources?query=${encodeURIComponent(searchQuery)}`);
+      setAiSuggestions(response.data.suggestions || []);
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      setAiSuggestions([]);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    // Basic field verification
+    if (!uploadForm.title.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    if (!uploadForm.moduleCode.trim()) {
+      toast.error('Please select a module');
+      return;
+    }
+    if (!uploadForm.file) {
+      toast.error('Please select a file to upload');
+      return;
+    }
+
+    // File type verification
+    const fileName = uploadForm.file.name.toLowerCase();
+    const forbiddenExts = ['.mp3', '.mp4'];
+    if (forbiddenExts.some(ext => fileName.endsWith(ext))) {
+      toast.error('Audio and video files (MP3, MP4) are not allowed.');
+      return;
+    }
+
+    const allowedExts = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.zip', '.rar', '.txt', '.jpg', '.jpeg', '.png', '.gif'];
+    const hasAllowedExt = allowedExts.some(ext => fileName.endsWith(ext));
+    if (!hasAllowedExt) {
+      toast.error('File type not supported. Please upload documents, images, or archives.');
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      const formData = new FormData();
+      formData.append('title', uploadForm.title);
+      formData.append('description', uploadForm.description);
+      formData.append('moduleCode', uploadForm.moduleCode);
+      formData.append('resourceType', uploadForm.resourceType);
+      formData.append('file', uploadForm.file);
+
+      await API.post('/resources', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      toast.success('Resource uploaded successfully! Pending admin approval.');
+      setShowUploadModal(false);
+      setUploadForm({
+        title: '',
+        description: '',
+        moduleCode: '',
+        resourceType: 'Lecture Notes',
+        file: null
+      });
+      
+      setActiveTab('my-uploads');
+      setTimeout(() => fetchResources(), 500);
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleDeleteResource = async () => {
+    try {
+      setDeleteLoading(true);
+      await API.delete(`/resources/${selectedResource._id}`);
+      toast.success('Resource deleted successfully');
+      setShowDeleteModal(false);
+      setSelectedResource(null);
+      fetchResources();
+    } catch (err) {
+      console.error('Delete error:', err);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDownload = async (resourceId) => {
+    try {
+      const response = await API.get(`/resources/${resourceId}/download`);
+      
+      if (!response.data.success) {
+        throw new Error('Download failed');
+      }
+
+      const { downloadUrl, fileName } = response.data;
+      
+      // Build full URL for download
+      const fullUrl = downloadUrl.startsWith('http') 
+        ? downloadUrl 
+        : `http://localhost:5000${downloadUrl}`;
+      
+      console.log('Downloading from:', fullUrl);
+      
+      const fileResponse = await fetch(fullUrl);
+      
+      if (!fileResponse.ok) {
+        throw new Error('File not found on server');
+      }
+      
+      const blob = await fileResponse.blob();
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || 'resource-file');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Download started');
+      fetchResources();
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Download failed. Please try again.');
+    }
+  };
+
+  const handleRateResource = async () => {
+    if (rating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+    if (!selectedResource?._id) return;
+
+    try {
+      setRatingSubmitLoading(true);
+      await API.post('/reviews/resource', {
+        resourceId: selectedResource._id,
+        rating: Number(rating),
+        comment: ratingComment
+      });
+      toast.success('Rating submitted successfully!');
+      setShowRatingModal(false);
+      setRating(0);
+      setRatingComment('');
+      setSelectedResource(null);
+      fetchResources();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to submit rating');
+    } finally {
+      setRatingSubmitLoading(false);
+    }
+  };
+
+  const getFileIcon = (fileType) => {
+    if (!fileType) return <File className="w-8 h-8" />;
+
+    const type = fileType.toLowerCase();
+    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />;
+    if (type.includes('doc')) return <FileText className="w-8 h-8 text-blue-500" />;
+    if (type.includes('xls') || type.includes('sheet')) return <FileSpreadsheet className="w-8 h-8 text-green-500" />;
+    if (type.includes('zip') || type.includes('rar')) return <FileArchive className="w-8 h-8 text-yellow-500" />;
+    return <File className="w-8 h-8 text-gray-500" />;
+  };
+
+  const getFileTypeBadge = (fileType) => {
+    if (!fileType) return 'FILE';
+
+    const type = fileType.toLowerCase();
+    if (type.includes('pdf')) return 'PDF';
+    if (type.includes('doc')) return 'DOCX';
+    if (type.includes('xls')) return 'XLSX';
+    if (type.includes('zip')) return 'ZIP';
+    return 'FILE';
+  };
+
+  const getFileColor = (fileType) => {
+    if (!fileType) return 'bg-gray-100 text-gray-700';
+
+    const type = fileType.toLowerCase();
+    if (type.includes('pdf')) return 'bg-red-100 text-red-700';
+    if (type.includes('doc')) return 'bg-blue-100 text-blue-700';
+    if (type.includes('xls')) return 'bg-green-100 text-green-700';
+    if (type.includes('zip')) return 'bg-yellow-100 text-yellow-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const filteredResources = resources.filter(resource => {
+    if (!searchQuery) return true;
+    return (
+      resource.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resource.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resource.moduleCode?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  const ResourceCard = ({ resource, showActions = true }) => {
+    const cardColors = {
+      'Lecture Notes': 'from-blue-50 to-blue-100',
+      'Assignments': 'from-green-50 to-green-100',
+      'Past Papers': 'from-red-50 to-red-100',
+      'Textbooks': 'from-purple-50 to-purple-100',
+      'Other': 'from-slate-50 to-slate-100'
+    };
+
+    const isOwner = resource.uploader?._id === user?._id;
+
+    return (
+      <Card className="relative overflow-hidden border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+        {/* Gradient header with icon and module */}
+        <div className={`bg-gradient-to-br ${cardColors[resource.resourceType] || cardColors['Other']} px-4 pt-4 pb-6`}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-wide text-primary-700 uppercase mb-1">
+                {getModuleName(resource.moduleCode) ? `${getModuleName(resource.moduleCode)} - ${resource.moduleCode}` : resource.moduleCode}
+              </p>
+              <h3 className="font-semibold text-gray-900 text-base line-clamp-2 max-w-[220px]">
+                {resource.title}
+              </h3>
+            </div>
+
+            {/* Rating badge */}
+            <div className="flex items-center gap-1 bg-white/90 px-2 py-1 rounded-full shadow-sm">
+              <Star
+                className={`w-3.5 h-3.5 ${
+                  resource.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                }`}
+              />
+              <span className="text-xs font-semibold text-gray-900">
+                {resource.averageRating > 0 ? resource.averageRating.toFixed(1) : '0.0'}
+              </span>
+            </div>
+          </div>
+
+          {/* File icon + type pill */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                {getFileIcon(resource.fileType)}
+              </div>
+              <span className="text-xs font-medium text-gray-700">
+                {resource.resourceType || 'Resource'}
+              </span>
+            </div>
+            <div className={`px-2 py-1 rounded-full text-[10px] font-semibold ${getFileColor(resource.fileType)}`}>
+              {getFileTypeBadge(resource.fileType)}
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-4 pt-3 pb-4 bg-white">
+          {/* Uploader + date + downloads */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center">
+                <span className="text-primary-700 font-semibold text-xs">
+                  {resource.uploader?.fullName?.charAt(0) || 'U'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-800">
+                  {resource.uploader?.fullName || 'Unknown uploader'}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {formatDate(resource.createdAt)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Download className="w-3.5 h-3.5" />
+              <span>{resource.downloadCount || 0}</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          {resource.description && (
+            <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+              {resource.description}
+            </p>
+          )}
+
+          {/* Status chip for my uploads */}
+          {activeTab === 'my-uploads' && (
+            <div className="mb-3">
+              {resource.status === 'approved' && (
+                <Badge variant="success" size="sm">
+                  <CheckCircle className="w-3 h-3 mr-1" /> Approved
+                </Badge>
+              )}
+              {resource.status === 'pending' && (
+                <Badge variant="warning" size="sm">
+                  <Clock className="w-3 h-3 mr-1" /> Pending
+                </Badge>
+              )}
+              {resource.status === 'rejected' && (
+                <Badge variant="danger" size="sm">
+                  <XCircle className="w-3 h-3 mr-1" /> Rejected
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Rejection Reason */}
+          {activeTab === 'my-uploads' && resource.status === 'rejected' && resource.rejectionReason && (
+            <div className="mb-3 p-2 bg-red-50 border border-red-100 rounded-lg">
+              <p className="text-[11px] font-semibold text-red-700 mb-1">Rejection Reason</p>
+              <p className="text-[11px] text-red-600 line-clamp-2">{resource.rejectionReason}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          {showActions && (
+            <div className="space-y-2">
+              {resource.status === 'approved' && (
+                <Button
+                  size="sm"
+                  icon={Eye}
+                  onClick={() => navigate(`/student/resources/${resource._id}`)}
+                  fullWidth
+                >
+                  View Details
+                </Button>
+              )}
+
+              {/* Delete button only on My Uploads tab */}
+              {isOwner && activeTab === 'my-uploads' && (
+                <Button
+                  size="sm"
+                  icon={Trash2}
+                  onClick={() => {
+                    setSelectedResource(resource);
+                    setShowDeleteModal(true);
+                  }}
+                  fullWidth
+                  variant="danger"
+                >
+                  Delete
+                </Button>
+              )}
+
+              {/* Rate button for history */}
+              {activeTab === 'history' && !resource.userRated && resource.status === 'approved' && (
+                <Button
+                  size="sm"
+                  icon={Star}
+                  onClick={() => {
+                    setSelectedResource(resource);
+                    setShowRatingModal(true);
+                  }}
+                  fullWidth
+                  variant="ghost"
+                >
+                  Rate Resource
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  };
 
   const tabs = [
     { id: 'all', label: 'All Resources', icon: FileText },
@@ -91,279 +544,546 @@ const Resources = () => {
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: Sparkles },
   ];
 
-  useEffect(() => {
-    // Simulate initial loading
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setModules(MOCK_MODULES);
-      if (activeTab === 'all') setResources(MOCK_RESOURCES);
-      else if (activeTab === 'history') setResources(MOCK_HISTORY);
-      else if (activeTab === 'my-uploads') setResources([]);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [activeTab, filters]);
-
-  useEffect(() => {
-    if (searchQuery.length > 2 && activeTab === 'ai-suggestions') {
-      setLoadingAI(true);
-      const timer = setTimeout(() => {
-        setAiSuggestions(MOCK_AI_SUGGESTIONS);
-        setLoadingAI(false);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [searchQuery, activeTab]);
-
-  const fetchResources = () => {
-    // No-op for mock version as it's handled in the useEffect
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    setUploadLoading(true);
-    setTimeout(() => {
-      toast.success('Simulation: File uploaded! (Backend not connected)');
-      setShowUploadModal(false);
-      setUploadLoading(false);
-      setActiveTab('my-uploads');
-    }, 1500);
-  };
-
-  const handleDownload = (resource) => {
-    toast.success(`Download started: ${resource.title}`);
-  };
-
-
-  const filteredResources = resources.filter(r => 
-    r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.moduleCode.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'approved': return <Badge variant="success">Approved</Badge>;
-      case 'pending': return <Badge variant="warning">Pending</Badge>;
-      case 'rejected': return <Badge variant="danger">Rejected</Badge>;
-      default: return null;
-    }
-  };
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader size="lg" text="Loading..." />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-8">
-        <div className="flex justify-between items-center mb-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Academic Resources</h1>
-            <p className="text-gray-600">Browse and share study materials with your peers</p>
+            <h1 className="text-3xl font-bold text-gray-900">Resources</h1>
+            <p className="text-gray-600 mt-1">
+              Browse, upload, and download academic resources
+            </p>
           </div>
-          <Button icon={Upload} onClick={() => setShowUploadModal(true)}>
+          <Button
+            icon={Upload}
+            onClick={() => setShowUploadModal(true)}
+          >
             Upload Resource
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search resources by title or module code..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <div className="space-y-6">
+            {/* Top Row: Search, Module, Sort */}
+            <div className="flex flex-col lg:flex-row gap-4 items-end">
+              {/* Search Bar */}
+              <div className="flex-1 w-full relative">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Search Resources</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by title, description, or module..."
+                    className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all shadow-sm group-hover:border-primary-300"
+                  />
+                </div>
+              </div>
+
+              {/* Module Filter */}
+              <div className="w-full lg:w-48">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Module</label>
+                <select
+                  value={filters.module}
+                  onChange={(e) => setFilters({ ...filters, module: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm shadow-sm"
+                >
+                  <option value="">All Modules</option>
+                  {modules.map(m => (
+                    <option key={m.code} value={m.code}>{m.code} - {m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort Filter */}
+              <div className="w-full lg:w-48">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Sort By</label>
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm shadow-sm"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="downloads">Most Downloaded</option>
+                </select>
+              </div>
+
+              {/* Clear Button */}
+              {(filters.module || filters.resourceType !== '') && (
+                <div className="w-full lg:w-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={X}
+                    onClick={() => setFilters({ ...filters, module: '', resourceType: '', sortBy: 'newest' })}
+                    className="text-gray-400 hover:text-red-500 py-2.5"
+                  >
+                    Reset
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Access */}
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Quick Access:</p>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant={filters.resourceType === '' ? 'primary' : 'outline'}
+                  onClick={() => setFilters({ ...filters, resourceType: '' })}
+                >
+                  All Types
+                </Button>
+                {resourceTypes.map(type => (
+                  <Button
+                    key={type}
+                    size="sm"
+                    variant={filters.resourceType === type ? 'primary' : 'outline'}
+                    onClick={() => setFilters({ ...filters, resourceType: type })}
+                  >
+                    {type}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Select
-              className="flex-1"
-              value={filters.module}
-              onChange={(e) => setFilters({...filters, module: e.target.value})}
-              options={[
-                { value: '', label: 'All Modules' },
-                ...modules.map(m => ({ value: m.code, label: m.code }))
-              ]}
-            />
-          </div>
-        </div>
+        </Card>
 
-        <div className="flex gap-4 mb-6 border-b border-gray-200 overflow-x-auto">
+        <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto flex-shrink-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-4 px-2 font-semibold text-sm transition-all whitespace-nowrap ${
-                  activeTab === tab.id 
-                    ? 'text-primary-600 border-b-2 border-primary-600' 
-                    : 'text-gray-500 hover:text-gray-700'
+                className={`flex-shrink-0 px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 text-primary-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-900'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`} />
-                {tab.label}
+                <span className="inline-flex items-center gap-2">
+                  <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`} />
+                  {tab.label}
+                </span>
               </button>
             );
           })}
         </div>
 
-
-        {activeTab === 'ai-suggestions' ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6">
-              <Sparkles className="w-10 h-10 text-purple-600 animate-pulse" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Resource Discovery</h2>
-            <p className="text-gray-500 text-center max-w-md mx-auto px-6 mb-8">
-              We're building an advanced AI engine to automatically categorize and recommend the best academic materials based on your learning style.
-            </p>
-            <div className="px-4 py-2 bg-purple-100 text-purple-700 text-sm font-bold rounded-full uppercase tracking-widest flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-600 rounded-full animate-ping"></div>
-              To Be Implemented
-            </div>
-          </div>
-        ) : loading ? (
-
-          <div className="flex justify-center py-12">
-            <Loader size="lg" text="Loading Academic Library..." />
-          </div>
-        ) : filteredResources.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-gray-300" />
-            </div>
-            <h3 className="text-gray-900 font-semibold mb-1">No Resources Found</h3>
-            <p className="text-gray-500 text-sm">
-              {activeTab === 'history' 
-                ? "You haven't downloaded any resources yet." 
-                : "Try adjusting your search or filters to find what you're looking for."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredResources.map((resource) => (
-              <Card key={resource._id} className="hover:shadow-lg transition-all flex flex-col h-full group border-gray-100">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center group-hover:bg-primary-100 transition-colors">
-                    <FileText className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Badge variant="info" className="bg-blue-50 text-blue-700 border-blue-100">
-                      {resource.resourceType}
-                    </Badge>
-                    {activeTab === 'my-uploads' && getStatusBadge(resource.status)}
-                  </div>
+        {/* AI Suggestions Tab */}
+        {activeTab === 'ai-suggestions' && (
+          <div>
+            <Card className="mb-6">
+              <div className="py-6 px-4">
+                <div className="text-center mb-4">
+                  <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    AI-Powered Resource Suggestions
+                  </h3>
+                  <p className="text-gray-600 mt-1">
+                    {searchQuery
+                      ? `Finding resources related to "${searchQuery}"...`
+                      : 'Type in the search bar above to get smart resource suggestions'}
+                  </p>
                 </div>
-                
-                <h3 className="font-bold text-gray-900 mb-1 group-hover:text-primary-700 transition-colors line-clamp-2">
-                  {resource.title}
-                </h3>
-                <p className="text-[10px] font-bold text-primary-600 mb-3 uppercase tracking-widest">{resource.moduleCode}</p>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-6 flex-grow leading-relaxed">{resource.description}</p>
-                
-                <div className="pt-4 border-t border-gray-100 mt-auto">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gray-100 border border-white shadow-sm flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-gray-700">{resource.uploader?.fullName?.charAt(0)}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-semibold text-gray-800 leading-none mb-0.5">{resource.uploader?.fullName}</span>
-                        <span className="text-[10px] text-gray-400 leading-none">{formatDate(resource.createdAt)}</span>
-                      </div>
-                    </div>
-                    {resource.downloadCount > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
-                        <Download className="w-3 h-3" />
-                        {resource.downloadCount}
-                      </div>
-                    )}
+
+                {/* Loading state */}
+                {searchQuery && loadingAI && (
+                  <div className="flex justify-center py-4">
+                    <Loader size="md" text="Getting AI suggestions..." />
                   </div>
-                  
-                  {(resource.status === 'approved' || activeTab === 'history') && (
-                    <Button
-                      fullWidth
-                      variant="outline"
-                      size="sm"
-                      icon={Download}
-                      onClick={() => handleDownload(resource)}
-                      className="group-hover:bg-primary-600 group-hover:text-white group-hover:border-primary-600 transition-all font-bold"
-                    >
-                      Download Material
+                )}
+
+                {/* Suggestions list */}
+                {searchQuery && !loadingAI && aiSuggestions.length > 0 && (
+                  <div className="mt-4 space-y-4">
+                    {aiSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          // Preferred: open externalUrl (web page / article / etc.) if provided
+                          if (suggestion.externalUrl) {
+                            window.open(suggestion.externalUrl, '_blank');
+                            return;
+                          }
+
+                          // Fallback: open internal resource detail page if we have an id
+                          if (suggestion.resourceId) {
+                            const url = `/student/resources/${suggestion.resourceId}`;
+                            const fullUrl = window.location.origin + url;
+                            window.open(fullUrl, '_blank');
+                            return;
+                          }
+
+                          // Last resort: just open the main resources page
+                          const url = `/student/resources`;
+                          const fullUrl = window.location.origin + url;
+                          window.open(fullUrl, '_blank');
+                        }}
+                        className="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50 hover:border-primary-200 transition-colors cursor-pointer"
+                      >
+                        <p className="text-sm font-semibold text-primary-700 hover:underline">
+                          {suggestion.title}
+                        </p>
+                        {suggestion.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {suggestion.description}
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+                          {suggestion.moduleCode && (
+                            <span>{suggestion.moduleCode}</span>
+                          )}
+                          {suggestion.type && (
+                            <span>{suggestion.type}</span>
+                          )}
+                          {typeof suggestion.relevance === 'number' && (
+                            <span>{suggestion.relevance}% match</span>
+                          )}
+                          {typeof suggestion.downloads === 'number' && suggestion.downloads > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Download className="w-3 h-3" />
+                              {suggestion.downloads}
+                            </span>
+                          )}
+                          {typeof suggestion.rating === 'number' && suggestion.rating > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              {suggestion.rating.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state inside same card */}
+                {searchQuery && !loadingAI && aiSuggestions.length === 0 && (
+                  <div className="mt-4 border-t border-gray-100 pt-4">
+                    <p className="text-sm text-gray-500">
+                      No suggestions found for "{searchQuery}".
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Try different keywords or browse all resources from the other tabs.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Resources Grid */}
+        {activeTab !== 'ai-suggestions' && (
+          <>
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader size="lg" text="Loading resources..." />
+              </div>
+            ) : filteredResources.length === 0 ? (
+              <Card>
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No resources found
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    {searchQuery
+                      ? 'Try adjusting your search or filters'
+                      : activeTab === 'my-uploads'
+                      ? 'You haven\'t uploaded any resources yet'
+                      : activeTab === 'history'
+                      ? 'You haven\'t downloaded any resources yet'
+                      : 'No approved resources available'}
+                  </p>
+                  {(activeTab === 'all' || activeTab === 'my-uploads') && (
+                    <Button onClick={() => setShowUploadModal(true)} icon={Upload}>
+                      Upload Resource
                     </Button>
                   )}
                 </div>
               </Card>
-            ))}
-          </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredResources.map((resource) => (
+                  <ResourceCard key={resource._id} resource={resource} />
+                ))}
+              </div>
+            )}
+          </>
         )}
+      </div>
 
+      {/* Upload Modal */}
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        title="Upload Resource"
+        size="lg"
+        closeOnOverlay={false}
+        showCloseButton={false}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} loading={uploadLoading} icon={Upload}>
+              Upload Resource
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Title"
+            name="title"
+            value={uploadForm.title}
+            onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+            placeholder="e.g., Midterm Revision Notes 2023"
+            required
+          />
 
-        <Modal
-          show={showUploadModal}
-          onClose={() => setShowUploadModal(false)}
-          title="Upload New Resource"
-        >
-          <form onSubmit={handleUpload} className="space-y-4">
-            <Input
-              label="Resource Title"
-              placeholder="e.g. Week 4 Lecture Notes"
-              value={uploadForm.title}
-              onChange={(e) => setUploadForm({...uploadForm, title: e.target.value})}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              value={uploadForm.description}
+              onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              placeholder="Brief description of the resource..."
+            />
+          </div>
+
+          <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Module <span className="text-red-500">*</span>
+              </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={uploadForm.moduleCode}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUploadForm({ ...uploadForm, moduleCode: value.toUpperCase() });
+                }}
+                onFocus={() => setShowModuleDropdown(true)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                placeholder="Search modules... (e.g., IT3120)"
+                required
+              />
+
+              {showModuleDropdown && uploadForm.moduleCode && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowModuleDropdown(false);
+                    }}
+                  />
+
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {(enrolledModules.length ? enrolledModules : modules)
+                      .filter(module =>
+                        !uploadForm.moduleCode || 
+                        module.code.toLowerCase().includes(uploadForm.moduleCode.toLowerCase()) ||
+                        module.name.toLowerCase().includes(uploadForm.moduleCode.toLowerCase())
+                      )
+                      .map((module) => (
+                        <button
+                          key={module.code}
+                          type="button"
+                          onClick={() => {
+                            setUploadForm({ ...uploadForm, moduleCode: module.code });
+                            setShowModuleDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-primary-50 border-b border-gray-100 last:border-b-0 transition-colors group"
+                        >
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-bold text-primary-700 min-w-[70px]">{module.code}</span>
+                            <span className="text-sm text-gray-600 line-clamp-1">{module.name}</span>
+                          </div>
+                        </button>
+                      ))}
+
+                    {(enrolledModules.length ? enrolledModules : modules).filter(module =>
+                      !uploadForm.moduleCode ||
+                      module.code.toLowerCase().includes(uploadForm.moduleCode.toLowerCase()) ||
+                      module.name.toLowerCase().includes(uploadForm.moduleCode.toLowerCase())
+                    ).length === 0 && (
+                        <div className="px-4 py-3 text-center text-gray-500">
+                          No modules found
+                        </div>
+                      )}
+                  </div>
+                </>
+              )}
+            </div>
+            {uploadForm.moduleCode && getModuleName(uploadForm.moduleCode) && (
+              <div className="mt-2 p-2 bg-primary-50 rounded-lg border border-primary-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></div>
+                <p className="text-sm font-medium text-primary-900">
+                  {uploadForm.moduleCode} - {getModuleName(uploadForm.moduleCode)}
+                </p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Start typing to search for your module
+            </p>
+          </div>
+
+          <Select
+            label="Resource Type"
+            value={uploadForm.resourceType}
+            onChange={(e) => setUploadForm({ ...uploadForm, resourceType: e.target.value })}
+            options={resourceTypes.map(type => ({ value: type, label: type }))}
+            required
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              File <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="file"
+              onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files[0] })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,.jpg,.jpeg,.png,.gif"
               required
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Module"
-                value={uploadForm.moduleCode}
-                onChange={(e) => setUploadForm({...uploadForm, moduleCode: e.target.value})}
-                options={[
-                  { value: '', label: 'Select Module' },
-                  ...modules.map(m => ({ value: m.code, label: m.code }))
-                ]}
-                required
-              />
-              <Select
-                label="Type"
-                value={uploadForm.resourceType}
-                onChange={(e) => setUploadForm({...uploadForm, resourceType: e.target.value})}
-                options={resourceTypes.map(t => ({ value: t, label: t }))}
-                required
-              />
+            <p className="text-xs text-gray-500 mt-1">
+              Supported: PDF, PPTX, ZIP, RAR, DOCX, TXT, Images (Max 50MB). MP3/MP4 strictly prohibited.
+            </p>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> Your upload will be reviewed by an admin before being published.
+            </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedResource(null);
+        }}
+        title="Delete Resource"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDeleteResource} loading={deleteLoading}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        {selectedResource && (
+          <div>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete this resource? This action cannot be undone.
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="font-semibold text-gray-900">{selectedResource.title}</p>
+              <p className="text-sm text-gray-600">{selectedResource.moduleCode}</p>
             </div>
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          </div>
+        )}
+      </Modal>
+
+      {/* Rating Modal */}
+      <Modal
+        isOpen={showRatingModal}
+        onClose={() => {
+          setShowRatingModal(false);
+          setRating(0);
+          setRatingComment('');
+        }}
+        title="Rate Resource"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowRatingModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRateResource} loading={ratingSubmitLoading}>
+              Submit Rating
+            </Button>
+          </>
+        }
+      >
+        {selectedResource && (
+          <div>
+            <p className="text-gray-600 mb-4">
+              How useful was "{selectedResource.title}"?
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rating <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`w-10 h-10 ${star <= rating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
+                        }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Comment (Optional)
+              </label>
               <textarea
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 h-24"
-                placeholder="Briefly describe the resource..."
-                value={uploadForm.description}
-                onChange={(e) => setUploadForm({...uploadForm, description: e.target.value})}
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                placeholder="Share your thoughts about this resource..."
               />
             </div>
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select File</label>
-              <input
-                type="file"
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-                onChange={(e) => setUploadForm({...uploadForm, file: e.target.files[0]})}
-                required
-              />
-            </div>
-            <div className="flex gap-3 justify-end mt-8">
-              <Button variant="ghost" type="button" onClick={() => setShowUploadModal(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={uploadLoading}>
-                Upload Now
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      </div>
+          </div>
+        )}
+      </Modal>
     </DashboardLayout>
   );
 };
 
-export default Resources;
-
+export default StudentResources;

@@ -1,20 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
-import PublicLayout from './components/layout/PublicLayout'
-
-// Public landing pages
-import Home from './pages/public/Home'
 
 // Auth pages
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
 
-// Dashboard page
+// Student pages (implemented)
 import Dashboard from './pages/student/Dashboard'
-import Sessions from './pages/student/Sessions'
 import Resources from './pages/student/Resources'
+
+// Placeholder pages (to be implemented)
 import Groups from './pages/student/Groups'
 
 // Session pages
@@ -30,66 +26,104 @@ import ExpertSessionHistory from './pages/expert/SessionHistory'
 import ExpertJoinedSessions from './pages/expert/JoinedSessions'
 import ExpertConductedSessions from './pages/expert/ConductedSessions'
 
+import AdminResources from './pages/admin/Resources'
+import AdminResourceDetail from './pages/admin/ResourceDetail'
+import ToBeImplemented from './pages/ToBeImplemented'
+
 function App() {
+  const { user } = useAuth();
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
+    <>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+      
+      <Routes>
+        {/* Default: redirect root to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        {/* Register: redirect to login (to be implemented) */}
+        <Route path="/register" element={<Navigate to="/login" replace />} />
         
-        <Routes>
-          {/* Public Landing Page */}
-          <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        {/* Main App Routes (Protected) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
           
-          {/* Main App Routes (Protected) */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/resources" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
-            <Route path="/groups" element={<Groups />} />
-            
-            {/* Admin Sessions */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="/admin/sessions" element={<AdminSessions />} />
-              <Route path="/admin/sessions/create" element={<AdminCreateSession />} />
-              <Route path="/admin/sessions/:id" element={<AdminSessionDetail />} />
-              <Route path="/admin/sessions/:id/edit" element={<AdminEditSessionDetails />} />
-            </Route>
+          {/* Resources - Shared route but handled by role wrapper */}
+          <Route 
+            path="/resources" 
+            element={
+              <ProtectedRoute allowedRoles={['student', 'expert', 'admin']}>
+                {user?.role === 'admin' ? <AdminResources /> : <Resources />}
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin Resource Alias */}
+          <Route 
+            path="/admin/resources" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminResources />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Resource Detail - Role specific */}
+          <Route path="/student/resources/:id" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
+          <Route path="/admin/resources/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminResourceDetail /></ProtectedRoute>} />
 
-            {/* Student Sessions */}
-            <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-              <Route path="/student/sessions" element={<StudentSessions />} />
-              <Route path="/student/sessions/:id" element={<StudentSessionDetail />} />
-            </Route>
-
-            {/* Expert Sessions */}
-            <Route element={<ProtectedRoute allowedRoles={['expert']} />}>
-              <Route path="/expert/session-history" element={<ExpertSessionHistory />} />
-              <Route path="/expert/joined-sessions" element={<ExpertJoinedSessions />} />
-              <Route path="/expert/conducted-sessions" element={<ExpertConductedSessions />} />
-              <Route path="/expert/sessions/:id" element={<StudentSessionDetail />} />
-            </Route>
+          <Route path="/groups" element={<Groups />} />
+          
+          {/* Admin Sessions */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin/sessions" element={<AdminSessions />} />
+            <Route path="/admin/sessions/create" element={<AdminCreateSession />} />
+            <Route path="/admin/sessions/:id" element={<AdminSessionDetail />} />
+            <Route path="/admin/sessions/:id/edit" element={<AdminEditSessionDetails />} />
           </Route>
 
-          
-          {/* Default & 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          {/* Student Sessions */}
+          <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+            <Route path="/student/sessions" element={<StudentSessions />} />
+            <Route path="/student/sessions/:id" element={<StudentSessionDetail />} />
+          </Route>
+
+          {/* Expert Sessions */}
+          <Route element={<ProtectedRoute allowedRoles={['expert']} />}>
+            <Route path="/expert/session-history" element={<ExpertSessionHistory />} />
+            <Route path="/expert/joined-sessions" element={<ExpertJoinedSessions />} />
+            <Route path="/expert/conducted-sessions" element={<ExpertConductedSessions />} />
+            <Route path="/expert/sessions/:id" element={<StudentSessionDetail />} />
+          </Route>
+
+          {/* Additional Features (Placeholders) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<ToBeImplemented />} />
+            <Route path="/settings" element={<ToBeImplemented />} />
+            <Route path="/chat" element={<ToBeImplemented />} />
+            <Route path="/feed" element={<ToBeImplemented />} />
+            <Route path="/users" element={<ProtectedRoute allowedRoles={['admin']}><ToBeImplemented /></ProtectedRoute>} />
+            <Route path="/expert-queue" element={<ProtectedRoute allowedRoles={['admin']}><ToBeImplemented /></ProtectedRoute>} />
+            <Route path="/modules" element={<ProtectedRoute allowedRoles={['lecturer', 'admin']}><ToBeImplemented /></ProtectedRoute>} />
+          </Route>
+        </Route>
+
+        {/* 404 → login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </>
   )
 }
-
 
 export default App
