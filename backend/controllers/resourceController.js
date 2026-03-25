@@ -373,8 +373,7 @@ exports.updateResource = async (req, res) => {
       averageRating: resource.averageRating || 0,
       totalRatings: resource.ratingCount || 0,
       downloadCount: resource.downloads || 0,
-      viewCount: resource.views || 0,
-      userRated: !!existingReview
+      viewCount: resource.views || 0
     };
     
     res.json({

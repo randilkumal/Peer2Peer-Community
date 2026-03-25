@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   // Check role-based access
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     console.log('🚫 Unauthorized role - redirecting to dashboard');
-    return <Navigate to={`/${user.role}/dashboard`} replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // User is authenticated and authorized
