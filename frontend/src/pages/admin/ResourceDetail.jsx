@@ -426,7 +426,7 @@ const AdminResourceDetail = () => {
                   variant="outline"
                   fullWidth
                 >
-                  Download
+                  Download Material
                 </Button>
                 
                 {resource.status === 'pending' && (

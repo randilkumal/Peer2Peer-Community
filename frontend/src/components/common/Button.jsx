@@ -7,7 +7,7 @@ const Button = ({
   loading = false,
   disabled = false,
   icon: Icon,
-  iconPosition = 'left',
+  iconPosition = 'right',
   fullWidth = false,
   className = '',
   type = 'button',

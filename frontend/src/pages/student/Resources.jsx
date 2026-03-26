@@ -260,41 +260,16 @@ const StudentResources = () => {
 
   const handleDownload = async (resourceId) => {
     try {
-      const response = await API.get(`/resources/${resourceId}/download`);
+      const token = localStorage.getItem('token');
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
-      if (!response.data.success) {
-        throw new Error('Download failed');
-      }
-
-      const { downloadUrl, fileName } = response.data;
-      
-      // Build full URL for download
-      const fullUrl = downloadUrl.startsWith('http') 
-        ? downloadUrl 
-        : `http://localhost:5000${downloadUrl}`;
-      
-      console.log('Downloading from:', fullUrl);
-      
-      const fileResponse = await fetch(fullUrl);
-      
-      if (!fileResponse.ok) {
-        throw new Error('File not found on server');
-      }
-      
-      const blob = await fileResponse.blob();
-      
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName || 'resource-file');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      window.URL.revokeObjectURL(url);
+      // Open download URL in a new tab which triggers the browser's download manager
+      window.open(`${apiBase.replace(/\/$/, '')}/resources/${resourceId}/download?token=${token}`, '_blank');
 
       toast.success('Download started');
-      fetchResources();
+      
+      // Refresh resources after a short delay to reflect incremented download count
+      setTimeout(() => fetchResources(), 1500);
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Download failed. Please try again.');
@@ -328,15 +303,16 @@ const StudentResources = () => {
     }
   };
 
-  const getFileIcon = (fileType) => {
-    if (!fileType) return <File className="w-8 h-8" />;
+  const getFileIcon = (fileType, className) => {
+    const defaultClasses = className || "w-8 h-8";
+    if (!fileType) return <File className={defaultClasses} />;
 
     const type = fileType.toLowerCase();
-    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />;
-    if (type.includes('doc')) return <FileText className="w-8 h-8 text-blue-500" />;
-    if (type.includes('xls') || type.includes('sheet')) return <FileSpreadsheet className="w-8 h-8 text-green-500" />;
-    if (type.includes('zip') || type.includes('rar')) return <FileArchive className="w-8 h-8 text-yellow-500" />;
-    return <File className="w-8 h-8 text-gray-500" />;
+    if (type.includes('pdf')) return <FileText className={defaultClasses} />;
+    if (type.includes('doc')) return <FileText className={defaultClasses} />;
+    if (type.includes('xls') || type.includes('sheet')) return <FileSpreadsheet className={defaultClasses} />;
+    if (type.includes('zip') || type.includes('rar')) return <FileArchive className={defaultClasses} />;
+    return <File className={defaultClasses} />;
   };
 
   const getFileTypeBadge = (fileType) => {
@@ -371,165 +347,170 @@ const StudentResources = () => {
   });
 
   const ResourceCard = ({ resource, showActions = true }) => {
-    const cardColors = {
-      'Lecture Notes': 'from-blue-50 to-blue-100',
-      'Assignments': 'from-green-50 to-green-100',
-      'Past Papers': 'from-red-50 to-red-100',
-      'Textbooks': 'from-purple-50 to-purple-100',
-      'Other': 'from-slate-50 to-slate-100'
+    // Type-based color tokens for badges and accents
+    const typeConfigs = {
+      'Lecture Notes': { 
+        bg: 'bg-blue-50', 
+        text: 'text-blue-700', 
+        iconBg: 'bg-blue-100',
+        iconColor: 'text-blue-600'
+      },
+      'Assignments': { 
+        bg: 'bg-green-50', 
+        text: 'text-green-700', 
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-600'
+      },
+      'Past Papers': { 
+        bg: 'bg-red-50', 
+        text: 'text-red-700', 
+        iconBg: 'bg-red-100',
+        iconColor: 'text-red-600'
+      },
+      'Textbooks': { 
+        bg: 'bg-purple-50', 
+        text: 'text-purple-700', 
+        iconBg: 'bg-purple-100',
+        iconColor: 'text-purple-600'
+      },
+      'Study Guides': { 
+        bg: 'bg-amber-50', 
+        text: 'text-amber-700', 
+        iconBg: 'bg-amber-100',
+        iconColor: 'text-amber-600'
+      },
+      'Other': { 
+        bg: 'bg-slate-50', 
+        text: 'text-slate-700', 
+        iconBg: 'bg-slate-100',
+        iconColor: 'text-slate-600'
+      }
     };
 
+    const config = typeConfigs[resource.resourceType] || typeConfigs['Other'];
     const isOwner = resource.uploader?._id === user?._id;
 
     return (
-      <Card className="relative overflow-hidden border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-        {/* Gradient header with icon and module */}
-        <div className={`bg-gradient-to-br ${cardColors[resource.resourceType] || cardColors['Other']} px-4 pt-4 pb-6`}>
+      <Card className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white group grayscale-[0.2] hover:grayscale-0">
+        {/* Top Section: Icon and Type Badge */}
+        <div className="p-5 pb-2">
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-primary-700 uppercase mb-1">
-                {getModuleName(resource.moduleCode) ? `${getModuleName(resource.moduleCode)} - ${resource.moduleCode}` : resource.moduleCode}
-              </p>
-              <h3 className="font-semibold text-gray-900 text-base line-clamp-2 max-w-[220px]">
-                {resource.title}
-              </h3>
+            <div className={`w-14 h-14 ${config.iconBg} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
+              {getFileIcon(resource.fileType, `w-7 h-7 ${config.iconColor}`)}
             </div>
-
-            {/* Rating badge */}
-            <div className="flex items-center gap-1 bg-white/90 px-2 py-1 rounded-full shadow-sm">
-              <Star
-                className={`w-3.5 h-3.5 ${
-                  resource.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-                }`}
-              />
-              <span className="text-xs font-semibold text-gray-900">
-                {resource.averageRating > 0 ? resource.averageRating.toFixed(1) : '0.0'}
-              </span>
-            </div>
-          </div>
-
-          {/* File icon + type pill */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                {getFileIcon(resource.fileType)}
-              </div>
-              <span className="text-xs font-medium text-gray-700">
-                {resource.resourceType || 'Resource'}
-              </span>
-            </div>
-            <div className={`px-2 py-1 rounded-full text-[10px] font-semibold ${getFileColor(resource.fileType)}`}>
-              {getFileTypeBadge(resource.fileType)}
+            <div className={`px-4 py-2 rounded-full text-sm font-bold ${config.bg} ${config.text} tracking-wider shadow-sm`}>
+              {resource.resourceType}
             </div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="px-4 pt-3 pb-4 bg-white">
-          {/* Uploader + date + downloads */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-primary-700 font-semibold text-xs">
-                  {resource.uploader?.fullName?.charAt(0) || 'U'}
+        {/* Content Section */}
+        <div className="p-5 pt-3 flex-1 flex flex-col">
+          <h3 className="text-lg font-extrabold text-[#0a3d62] leading-snug line-clamp-2 mb-1 min-h-[3.5rem]">
+            {resource.title}
+          </h3>
+          <p className="text-xs font-bold text-[#3c6382] uppercase tracking-widest mb-3">
+            {resource.moduleCode}
+          </p>
+          
+          <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-4 flex-1">
+            {resource.description || "Comprehensive academic resource shared by peers to enhance your learning experience."}
+          </p>
+
+          {/* rating display */}
+          <div className="flex items-center gap-1.5 mb-5 px-3 py-1.5 bg-gray-50 rounded-xl w-fit">
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star 
+                  key={s} 
+                  className={`w-3.5 h-3.5 ${s <= Math.round(resource.averageRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} 
+                />
+              ))}
+            </div>
+            <span className="text-xs font-black text-gray-700">
+              {resource.averageRating?.toFixed(1) || "0.0"}
+            </span>
+          </div>
+
+          <div className="h-px bg-gray-100 mb-5" />
+
+          {/* Footer Info */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
+                {resource.uploader?.profilePicture ? (
+                  <img src={resource.uploader.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-primary-700 font-black text-sm">
+                    {resource.uploader?.fullName?.charAt(0) || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-900 leading-tight">
+                  {resource.uploader?.fullName || 'Academic Member'}
+                </span>
+                <span className="text-[10px] font-medium text-gray-400">
+                  {formatDate(resource.createdAt)}
                 </span>
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-800">
-                  {resource.uploader?.fullName || 'Unknown uploader'}
-                </p>
-                <p className="text-[11px] text-gray-500">
-                  {formatDate(resource.createdAt)}
-                </p>
-              </div>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Download className="w-3.5 h-3.5" />
-              <span>{resource.downloadCount || 0}</span>
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <Download className="w-4 h-4" />
+              <span className="text-xs font-black">{resource.downloadCount || 0}</span>
             </div>
           </div>
 
-          {/* Description */}
-          {resource.description && (
-            <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-              {resource.description}
-            </p>
-          )}
+          {/* Action Button */}
+          <Button
+            onClick={() => handleDownload(resource._id)}
+            icon={Download}
+            variant="primary"
+            className="w-full py-1.5 rounded-2xl font-medium shadow-md active:scale-95 transition-all text-sm tracking-wide"
+          >
+            Download Material
+          </Button>
 
-          {/* Status chip for my uploads */}
-          {activeTab === 'my-uploads' && (
-            <div className="mb-3">
-              {resource.status === 'approved' && (
-                <Badge variant="success" size="sm">
-                  <CheckCircle className="w-3 h-3 mr-1" /> Approved
-                </Badge>
-              )}
-              {resource.status === 'pending' && (
-                <Badge variant="warning" size="sm">
-                  <Clock className="w-3 h-3 mr-1" /> Pending
-                </Badge>
-              )}
-              {resource.status === 'rejected' && (
-                <Badge variant="danger" size="sm">
-                  <XCircle className="w-3 h-3 mr-1" /> Rejected
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Rejection Reason */}
-          {activeTab === 'my-uploads' && resource.status === 'rejected' && resource.rejectionReason && (
-            <div className="mb-3 p-2 bg-red-50 border border-red-100 rounded-lg">
-              <p className="text-[11px] font-semibold text-red-700 mb-1">Rejection Reason</p>
-              <p className="text-[11px] text-red-600 line-clamp-2">{resource.rejectionReason}</p>
-            </div>
-          )}
-
-          {/* Actions */}
-          {showActions && (
-            <div className="space-y-2">
-              {resource.status === 'approved' && (
-                <Button
-                  size="sm"
-                  icon={Eye}
-                  onClick={() => navigate(`/student/resources/${resource._id}`)}
-                  fullWidth
-                >
-                  View Details
-                </Button>
-              )}
-
-              {/* Delete button only on My Uploads tab */}
+          {/* Contextual actions */}
+          {showActions && (isOwner || activeTab === 'history' || true) && (
+            <div className="flex gap-2 mt-2">
               {isOwner && activeTab === 'my-uploads' && (
                 <Button
                   size="sm"
+                  variant="ghost"
                   icon={Trash2}
+                  className="flex-1 text-red-500 hover:bg-red-50 font-bold text-xs py-1"
                   onClick={() => {
                     setSelectedResource(resource);
                     setShowDeleteModal(true);
                   }}
-                  fullWidth
-                  variant="danger"
                 >
-                  Delete
+                  Remove
                 </Button>
               )}
-
-              {/* Rate button for history */}
-              {activeTab === 'history' && !resource.userRated && resource.status === 'approved' && (
+              {activeTab === 'history' && !resource.userRated && (
                 <Button
                   size="sm"
+                  variant="ghost"
                   icon={Star}
+                  className="flex-1 text-amber-500 hover:bg-amber-50 font-bold text-xs py-1"
                   onClick={() => {
                     setSelectedResource(resource);
                     setShowRatingModal(true);
                   }}
-                  fullWidth
-                  variant="ghost"
                 >
-                  Rate Resource
+                  Rate Now
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={Eye}
+                className="flex-1 font-medium text-sm py-1 shadow-sm rounded-2xl"
+                onClick={() => navigate(`/student/resources/${resource._id}`)}
+              >
+                Details
+              </Button>
             </div>
           )}
         </div>
