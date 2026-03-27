@@ -97,12 +97,22 @@ const StudentResourceDetail = () => {
     }
   };
 
-  const getFileIcon = (fileType) => {
+  const getFileIcon = (fileType, resourceType) => {
+    const typeThemes = {
+      'Lecture Notes': { text: 'text-blue-500', bar: 'bg-blue-500', hover: 'bg-blue-50' },
+      'Assignments':   { text: 'text-green-500', bar: 'bg-green-500', hover: 'bg-green-50' },
+      'Past Papers':   { text: 'text-red-500', bar: 'bg-red-500', hover: 'bg-red-50' },
+      'Textbooks':     { text: 'text-purple-500', bar: 'bg-purple-500', hover: 'bg-purple-50' },
+      'Study Guides':  { text: 'text-amber-500', bar: 'bg-amber-500', hover: 'bg-amber-50' },
+      'Other':         { text: 'text-slate-500', bar: 'bg-slate-500', hover: 'bg-slate-50' },
+    };
+    const theme = typeThemes[resourceType] || typeThemes['Other'];
+
     return (
       <div className="w-20 min-w-[5rem] h-20 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm relative overflow-hidden group">
-        <div className="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <FileText className="w-10 h-10 text-red-500 relative z-10" />
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500" />
+        <div className={`absolute inset-0 ${theme.hover} opacity-0 group-hover:opacity-100 transition-opacity`} />
+        <FileText className={`w-10 h-10 ${theme.text} relative z-10`} />
+        <div className={`absolute bottom-0 left-0 right-0 h-1 ${theme.bar}`} />
       </div>
     );
   };
@@ -148,7 +158,7 @@ const StudentResourceDetail = () => {
             <Card className="p-8 border-gray-200/60 shadow-sm rounded-xl overflow-hidden relative">
               <div className="flex flex-col md:flex-row gap-8">
                 {/* Visual Icon */}
-                {getFileIcon(resource.fileType)}
+                {getFileIcon(resource.fileType, resource.resourceType)}
 
                 {/* Header Content */}
                 <div className="flex-1 space-y-4">
@@ -373,7 +383,7 @@ const StudentResourceDetail = () => {
                 <Sparkles className="w-6 h-6 text-gray-400" />
               </div>
               <h3 className="text-sm font-bold text-gray-700 mb-1">AI Assistant</h3>
-              <p className="text-xs font-medium text-gray-500">To be implemented</p>
+              <p className="text-xs font-medium text-gray-500">To be implemented!</p>
             </Card>
           </div>
         </div>

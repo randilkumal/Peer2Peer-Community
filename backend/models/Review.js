@@ -53,8 +53,15 @@ const ReviewSchema = new mongoose.Schema({
 });
 
 // Prevent user from submitting more than one review per resource
-ReviewSchema.index({ resource: 1, reviewer: 1 }, { unique: true, sparse: true });
+ReviewSchema.index(
+  { resource: 1, reviewer: 1 },
+  { unique: true, partialFilterExpression: { resource: { $exists: true, $type: 'objectId' } } }
+);
+
 // Prevent user from submitting more than one review per expert per session
-ReviewSchema.index({ expert: 1, session: 1, reviewer: 1 }, { unique: true, sparse: true });
+ReviewSchema.index(
+  { expert: 1, session: 1, reviewer: 1 },
+  { unique: true, partialFilterExpression: { expert: { $exists: true, $type: 'objectId' }, session: { $exists: true, $type: 'objectId' } } }
+);
 
 module.exports = mongoose.model('Review', ReviewSchema);

@@ -69,6 +69,7 @@ const Input = ({
             border rounded-lg 
             transition-all
             outline-none
+            text-sm
             ${hasLeftIcon ? 'pl-11' : ''}
             ${hasRightIcon ? 'pr-11' : ''}
             ${error 

@@ -64,6 +64,15 @@ exports.createResourceReview = async (req, res) => {
       });
     }
 
+    // Force drop incorrect sparse indexes that cause cross-review collisions
+    try {
+      await Review.collection.dropIndex('expert_1_session_1_reviewer_1');
+      await Review.collection.dropIndex('resource_1_reviewer_1');
+      await Review.syncIndexes({ background: true });
+    } catch (e) {
+      // Ignore if they are already dropped
+    }
+
     // Check if resource exists
     const resource = await Resource.findById(resourceId);
     if (!resource) {
@@ -73,14 +82,20 @@ exports.createResourceReview = async (req, res) => {
       });
     }
 
-    // (Restriction removed: Users CAN review their own resource now based on request)
+    // Prevent users from rating their own resources
+    if (resource.uploadedBy && resource.uploadedBy.toString() === rid.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot rate your own uploaded resources'
+      });
+    }
 
     // Check if user already reviewed this resource
     const existingReview = await Review.findOne({
       reviewer: rid,
       $or: [
-        { reviewType: 'resource', resource: resourceId },
-        { type: 'resource', resourceId }
+        { resource: resourceId },
+        { resourceId: resourceId }
       ]
     });
 

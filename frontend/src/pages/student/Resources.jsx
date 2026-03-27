@@ -44,8 +44,8 @@ const StudentResources = () => {
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [loadingAI, setLoadingAI] = useState(false);
+  // const [aiSuggestions, setAiSuggestions] = useState([]);
+  // const [loadingAI, setLoadingAI] = useState(false);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -60,6 +60,7 @@ const StudentResources = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [ratingSubmitLoading, setRatingSubmitLoading] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState({});
 
   // Upload form
   const [uploadForm, setUploadForm] = useState({
@@ -89,11 +90,11 @@ const StudentResources = () => {
   }, [activeTab, filters, user]); // Change from user?._id to user
 
   // AI Suggestions when search changes
-  useEffect(() => {
+  /* useEffect(() => {
     if (searchQuery && searchQuery.length > 2 && activeTab === 'ai-suggestions') {
       fetchAISuggestions();
     }
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeTab]); */
 
   // Load full module objects for the student's enrolledModules list
   const loadEnrolledModules = async () => {
@@ -142,11 +143,11 @@ const StudentResources = () => {
       // History tab - show downloaded resources
       endpoint = '/resources/my-downloads?';
       console.log('📜 Fetching download history');
-    } else if (activeTab === 'ai-suggestions') {
+    } /* else if (activeTab === 'ai-suggestions') {
       setResources([]);
       setLoading(false);
       return;
-    } else {
+    } */ else {
       // All Resources tab - IMPORTANT: Add status=approved parameter
       endpoint += 'status=approved&';
       console.log('🌐 Fetching all approved resources');
@@ -168,7 +169,7 @@ const StudentResources = () => {
   }
 };
 
-  const fetchAISuggestions = async () => {
+  /* const fetchAISuggestions = async () => {
     try {
       setLoadingAI(true);
       const response = await API.get(`/ai/suggest-resources?query=${encodeURIComponent(searchQuery)}`);
@@ -179,20 +180,20 @@ const StudentResources = () => {
     } finally {
       setLoadingAI(false);
     }
-  };
+  }; */
 
   const handleUpload = async () => {
+    // Reset errors
+    setUploadErrors({});
+
     // Basic field verification
-    if (!uploadForm.title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
-    if (!uploadForm.moduleCode.trim()) {
-      toast.error('Please select a module');
-      return;
-    }
-    if (!uploadForm.file) {
-      toast.error('Please select a file to upload');
+    const errors = {};
+    if (!uploadForm.title.trim()) errors.title = 'Title is required';
+    if (!uploadForm.moduleCode.trim()) errors.moduleCode = 'Module is required';
+    if (!uploadForm.file) errors.file = 'Please select a file to upload';
+
+    if (Object.keys(errors).length > 0) {
+      setUploadErrors(errors);
       return;
     }
 
@@ -388,7 +389,8 @@ const StudentResources = () => {
     };
 
     const config = typeConfigs[resource.resourceType] || typeConfigs['Other'];
-    const isOwner = resource.uploader?._id === user?._id;
+    const uploaderId = resource.uploader?._id || resource.uploader;
+    const isOwner = uploaderId?.toString() === user?._id?.toString();
 
     return (
       <Card className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white group grayscale-[0.2] hover:grayscale-0">
@@ -484,7 +486,7 @@ const StudentResources = () => {
           </div>
 
           {/* Contextual actions */}
-          {showActions && (isOwner || (activeTab === 'history' && !resource.userRated)) && (
+          {showActions && (isOwner || (activeTab === 'history' && !resource.userRated && !isOwner)) && (
             <div className="flex gap-2 mt-3">
               {isOwner && activeTab === 'my-uploads' && (
                 <Button
@@ -501,7 +503,7 @@ const StudentResources = () => {
                   Remove
                 </Button>
               )}
-              {activeTab === 'history' && !resource.userRated && (
+              {activeTab === 'history' && !resource.userRated && !isOwner && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -676,110 +678,19 @@ const StudentResources = () => {
           })}
         </div>
 
-        {/* AI Suggestions Tab */}
+        {/* AI Suggestions Tab Placeholder */}
         {activeTab === 'ai-suggestions' && (
-          <div>
-            <Card className="mb-6">
-              <div className="py-6 px-4">
-                <div className="text-center mb-4">
-                  <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    AI-Powered Resource Suggestions
-                  </h3>
-                  <p className="text-gray-600 mt-1">
-                    {searchQuery
-                      ? `Finding resources related to "${searchQuery}"...`
-                      : 'Type in the search bar above to get smart resource suggestions'}
-                  </p>
-                </div>
-
-                {/* Loading state */}
-                {searchQuery && loadingAI && (
-                  <div className="flex justify-center py-4">
-                    <Loader size="md" text="Getting AI suggestions..." />
-                  </div>
-                )}
-
-                {/* Suggestions list */}
-                {searchQuery && !loadingAI && aiSuggestions.length > 0 && (
-                  <div className="mt-4 space-y-4">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          // Preferred: open externalUrl (web page / article / etc.) if provided
-                          if (suggestion.externalUrl) {
-                            window.open(suggestion.externalUrl, '_blank');
-                            return;
-                          }
-
-                          // Fallback: open internal resource detail page if we have an id
-                          if (suggestion.resourceId) {
-                            const url = `/student/resources/${suggestion.resourceId}`;
-                            const fullUrl = window.location.origin + url;
-                            window.open(fullUrl, '_blank');
-                            return;
-                          }
-
-                          // Last resort: just open the main resources page
-                          const url = `/student/resources`;
-                          const fullUrl = window.location.origin + url;
-                          window.open(fullUrl, '_blank');
-                        }}
-                        className="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50 hover:border-primary-200 transition-colors cursor-pointer"
-                      >
-                        <p className="text-sm font-semibold text-primary-700 hover:underline">
-                          {suggestion.title}
-                        </p>
-                        {suggestion.description && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                            {suggestion.description}
-                          </p>
-                        )}
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
-                          {suggestion.moduleCode && (
-                            <span>{suggestion.moduleCode}</span>
-                          )}
-                          {suggestion.type && (
-                            <span>{suggestion.type}</span>
-                          )}
-                          {typeof suggestion.relevance === 'number' && (
-                            <span>{suggestion.relevance}% match</span>
-                          )}
-                          {typeof suggestion.downloads === 'number' && suggestion.downloads > 0 && (
-                            <span className="inline-flex items-center gap-1">
-                              <Download className="w-3 h-3" />
-                              {suggestion.downloads}
-                            </span>
-                          )}
-                          {typeof suggestion.rating === 'number' && suggestion.rating > 0 && (
-                            <span className="inline-flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              {suggestion.rating.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Empty state inside same card */}
-                {searchQuery && !loadingAI && aiSuggestions.length === 0 && (
-                  <div className="mt-4 border-t border-gray-100 pt-4">
-                    <p className="text-sm text-gray-500">
-                      No suggestions found for "{searchQuery}".
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Try different keywords or browse all resources from the other tabs.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
+          <Card className="p-12 border-dashed border-2 border-gray-200 shadow-none rounded-3xl bg-gray-50 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-6">
+              <Sparkles className="w-8 h-8 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2 font-primary">AI Suggestions</h3>
+            <p className="text-gray-500 font-medium italic">To be implemented!</p>
+          </Card>
         )}
+
+        {/* AI Suggestions Tab (HIDDEN LOGIC) */}
+        {/* {activeTab === 'ai-suggestions' && ( ... ) } */}
 
         {/* Resources Grid */}
         {activeTab !== 'ai-suggestions' && (
@@ -835,20 +746,23 @@ const StudentResources = () => {
             <Button variant="outline" onClick={() => setShowUploadModal(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpload} loading={uploadLoading} icon={Upload}>
+            <Button type="submit" form="upload-resource-form" loading={uploadLoading} icon={Upload}>
               Upload Resource
             </Button>
           </>
         }
       >
-        <div className="space-y-4">
+        <form id="upload-resource-form" onSubmit={(e) => { e.preventDefault(); handleUpload(); }} className="space-y-4">
           <Input
             label="Title"
             name="title"
             value={uploadForm.title}
-            onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+            onChange={(e) => {
+               setUploadForm({ ...uploadForm, title: e.target.value });
+               if (uploadErrors.title) setUploadErrors(prev => ({ ...prev, title: null }));
+            }}
             placeholder="e.g., Midterm Revision Notes 2023"
-            required
+            error={uploadErrors.title}
           />
 
           <div>
@@ -875,12 +789,22 @@ const StudentResources = () => {
                 onChange={(e) => {
                   const value = e.target.value;
                   setUploadForm({ ...uploadForm, moduleCode: value.toUpperCase() });
+                  if (uploadErrors.moduleCode) setUploadErrors(prev => ({ ...prev, moduleCode: null }));
                 }}
                 onFocus={() => setShowModuleDropdown(true)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${
+                  uploadErrors.moduleCode 
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                    : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200'
+                }`}
                 placeholder="Search modules... (e.g., IT3120)"
-                required
+                autoComplete="off"
               />
+              {uploadErrors.moduleCode && (
+                <p className="mt-1.5 text-sm text-red-600 font-medium animate-in fade-in slide-in-from-top-1">
+                  {uploadErrors.moduleCode}
+                </p>
+              )}
 
               {showModuleDropdown && uploadForm.moduleCode && (
                 <>
@@ -947,7 +871,6 @@ const StudentResources = () => {
             value={uploadForm.resourceType}
             onChange={(e) => setUploadForm({ ...uploadForm, resourceType: e.target.value })}
             options={resourceTypes.map(type => ({ value: type, label: type }))}
-            required
           />
 
           <div>
@@ -956,11 +879,22 @@ const StudentResources = () => {
             </label>
             <input
               type="file"
-              onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files[0] })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              onChange={(e) => {
+                setUploadForm({ ...uploadForm, file: e.target.files[0] });
+                if (uploadErrors.file) setUploadErrors(prev => ({ ...prev, file: null }));
+              }}
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-all ${
+                uploadErrors.file 
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                  : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200'
+              }`}
               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,.jpg,.jpeg,.png,.gif"
-              required
             />
+            {uploadErrors.file && (
+              <p className="mt-1.5 text-sm text-red-600 font-medium animate-in fade-in slide-in-from-top-1">
+                {uploadErrors.file}
+              </p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Supported: PDF, PPTX, ZIP, RAR, DOCX, TXT, Images (Max 50MB). MP3/MP4 strictly prohibited.
             </p>
@@ -971,7 +905,7 @@ const StudentResources = () => {
               <strong>Note:</strong> Your upload will be reviewed by an admin before being published.
             </p>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Delete Confirmation Modal */}

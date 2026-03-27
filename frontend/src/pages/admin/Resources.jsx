@@ -330,7 +330,7 @@ const AdminResources = () => {
               value={selectedModule}
               onChange={(e) => setSelectedModule(e.target.value)}
               options={moduleOptions}
-              className="w-full text-xs lg:w-56"
+              className="w-full lg:w-56"
             />
 
             <Button variant="outline" onClick={clearFilters}>
@@ -366,44 +366,58 @@ const AdminResources = () => {
           </Card>
         ) : (
           <Card>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="border-b border-gray-200 bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <div className="overflow-x-auto rounded-xl">
+              <table className="w-full whitespace-nowrap">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100 text-left">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Resource
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Module
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Uploader
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Uploaded
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest text-gray-400">
                       Actions
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredResources.map((resource) => (
-                    <tr key={resource._id} className="hover:bg-gray-50">
+                <tbody className="divide-y divide-gray-50 bg-white">
+                  {filteredResources.map((resource) => {
+                    // Type-based colors
+                    const typeColors = {
+                      'Lecture Notes': 'bg-blue-50 text-blue-900',
+                      'Assignments':   'bg-green-50 text-green-900',
+                      'Past Papers':   'bg-red-50 text-red-900',
+                      'Textbooks':     'bg-purple-50 text-purple-900',
+                      'Study Guides':  'bg-amber-50 text-amber-900',
+                      'Other':         'bg-slate-50 text-slate-900'
+                    };
+                    const typeClass = typeColors[resource.resourceType] || 'bg-slate-50 text-slate-900';
+
+                    return (
+                    <tr key={resource._id} className="hover:bg-blue-50/30 transition-colors group">
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {getFileIcon(resource.fileType)}
+                        <div className="flex items-center gap-4">
+                          <div className="flex-shrink-0 w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
+                            {getFileIcon(resource.fileType)}
+                          </div>
                           <div>
-                            <p className="font-medium text-gray-900">{resource.title}</p>
+                            <p className="font-extrabold text-gray-900 text-sm">{resource.title}</p>
                             {resource.description && (
-                              <p className="line-clamp-1 text-sm text-gray-500">
+                              <p className="line-clamp-1 text-xs font-medium text-gray-400 mt-0.5 max-w-[200px]">
                                 {resource.description}
                               </p>
                             )}
@@ -412,48 +426,45 @@ const AdminResources = () => {
                       </td>
 
                       <td className="px-6 py-4">
-                        <Badge
-                          variant="primary-outline"
-                          size="sm"
-                          className="max-w-[180px] whitespace-normal text-left"
-                        >
-                          {getModuleName(resource.moduleCode)
-                            ? `${getModuleName(resource.moduleCode)} - ${resource.moduleCode}`
-                            : resource.moduleCode}
-                        </Badge>
+                        <div className="inline-flex px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-bold border border-gray-200">
+                          {resource.moduleCode}
+                        </div>
                       </td>
 
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100">
-                            <span className="text-xs font-semibold text-primary-600">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 border border-white shadow-sm">
+                            <span className="text-sm font-black text-blue-600">
                               {resource.uploader?.fullName?.charAt(0) || "U"}
                             </span>
                           </div>
-                          <span className="text-sm text-gray-900">
+                          <span className="text-sm font-bold text-gray-700">
                             {resource.uploader?.fullName || "Unknown"}
                           </span>
                         </div>
                       </td>
 
                       <td className="px-6 py-4">
-                        <Badge variant="default" size="sm">
-                          {resource.resourceType}
-                        </Badge>
+                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-bold tracking-wide ${typeClass}`}>
+                          {resource.resourceType || "Other"}
+                        </span>
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-xs font-medium text-gray-500">
                         {formatDate(resource.createdAt)}
                       </td>
 
-                      <td className="px-6 py-4">{getStatusBadge(resource.status)}</td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(resource.status)}
+                      </td>
 
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             icon={Eye}
+                            className="!rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 text-xs py-1.5 font-semibold"
                             onClick={() => navigate(`/admin/resources/${resource._id}`)}
                           >
                             View
@@ -466,7 +477,7 @@ const AdminResources = () => {
                                 variant="outline"
                                 icon={CheckCircle}
                                 onClick={() => handleQuickApprove(resource)}
-                                className="border-green-300 text-green-600 hover:bg-green-50"
+                                className="!rounded-xl border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 text-xs py-1.5"
                                 disabled={actionLoading}
                               >
                                 Approve
@@ -477,7 +488,7 @@ const AdminResources = () => {
                                 variant="outline"
                                 icon={XCircle}
                                 onClick={() => handleQuickReject(resource)}
-                                className="border-red-300 text-red-600 hover:bg-red-50"
+                                className="!rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-xs py-1.5"
                                 disabled={actionLoading}
                               >
                                 Reject
@@ -487,7 +498,7 @@ const AdminResources = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>

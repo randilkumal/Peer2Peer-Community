@@ -229,19 +229,16 @@ const AdminResourceDetail = () => {
 
   const getStatusBadge = (status) => {
     const variants = {
-      pending: { color: "warning", icon: Clock, text: "Pending" },
-      approved: { color: "success", icon: CheckCircle, text: "Approved" },
-      rejected: { color: "danger", icon: XCircle, text: "Rejected" },
+      pending: "bg-amber-50 text-amber-600 border-amber-100",
+      approved: "bg-emerald-50 text-emerald-600 border-emerald-100",
+      rejected: "bg-rose-50 text-rose-600 border-rose-100",
     };
-
-    const config = variants[status] || variants.pending;
-    const Icon = config.icon;
+    const style = variants[status] || "bg-gray-50 text-gray-700 border-gray-100";
 
     return (
-      <Badge variant={config.color} className="flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {config.text}
-      </Badge>
+      <div className={`h-[42px] px-5 flex items-center rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] border ${style} shadow-sm`}>
+        {status === 'pending' ? 'Pending Review' : status}
+      </div>
     );
   };
 
@@ -304,12 +301,12 @@ const AdminResourceDetail = () => {
             Back to Resources
           </Button>
 
-          <div className="flex items-center gap-3">
-            {getStatusBadge(resource.status)}
+          <div className="flex items-center gap-4">
             <Button
               variant="outline"
               icon={RefreshCw}
               onClick={handleRefresh}
+              className="h-[42px] shadow-sm hover:shadow-md transition-all active:scale-95"
               disabled={actionLoading || ratingSubmitLoading}
             >
               Refresh
@@ -334,9 +331,10 @@ const AdminResourceDetail = () => {
               </div>
               <div className="flex gap-2">
                 <Button
+                  variant="outline"
                   icon={CheckCircle}
                   onClick={() => setShowApproveModal(true)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
                   disabled={actionLoading}
                 >
                   Approve
@@ -345,7 +343,7 @@ const AdminResourceDetail = () => {
                   icon={XCircle}
                   variant="outline"
                   onClick={() => setShowRejectModal(true)}
-                  className="border-red-300 text-red-600 hover:bg-red-50"
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                   disabled={actionLoading}
                 >
                   Reject
@@ -468,52 +466,54 @@ const AdminResourceDetail = () => {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              {/* Action Buttons */}
+              <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row flex-wrap gap-4">
                 <Button
+                  variant="outline"
                   icon={Eye}
+                  iconPosition="left"
                   onClick={handleViewFile}
-                  fullWidth
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 min-w-[140px] !rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3.5 text-sm justify-center shadow-sm"
                 >
                   View File
                 </Button>
 
                 <Button
+                  variant="outline"
                   icon={Download}
+                  iconPosition="left"
                   onClick={() => {
                     const token = localStorage.getItem("token");
-                    const apiBase =
-                      import.meta.env.VITE_API_URL ||
-                      "http://localhost:5000/api";
+                    const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
                     window.open(
                       `${apiBase.replace(/\/$/, "")}/resources/${id}/download?token=${token}`,
                       "_blank",
                     );
                   }}
-                  variant="outline"
-                  fullWidth
+                  className="flex-1 min-w-[140px] !rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
                 >
-                  Download Material
+                  Download
                 </Button>
 
                 {resource.status === "pending" && isAdmin && (
                   <>
                     <Button
+                      variant="outline"
                       icon={CheckCircle}
+                      iconPosition="left"
                       onClick={() => setShowApproveModal(true)}
-                      className="bg-green-600 hover:bg-green-700"
-                      fullWidth
                       disabled={actionLoading}
+                      className="flex-1 min-w-[140px] !rounded-xl border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
                     >
                       Approve
                     </Button>
                     <Button
-                      icon={XCircle}
                       variant="outline"
+                      icon={XCircle}
+                      iconPosition="left"
                       onClick={() => setShowRejectModal(true)}
-                      className="border-red-300 text-red-600 hover:bg-red-50"
-                      fullWidth
                       disabled={actionLoading}
+                      className="flex-1 min-w-[140px] !rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
                     >
                       Reject
                     </Button>
@@ -522,12 +522,12 @@ const AdminResourceDetail = () => {
 
                 {isAdmin && resource.status !== "pending" && (
                   <Button
-                    icon={Trash2}
                     variant="outline"
+                    icon={Trash2}
+                    iconPosition="left"
                     onClick={() => setShowDeleteModal(true)}
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                    fullWidth
                     disabled={actionLoading}
+                    className="flex-1 min-w-[140px] !rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
                   >
                     Delete
                   </Button>
@@ -728,71 +728,7 @@ const AdminResourceDetail = () => {
               </div>
             </Card>
 
-            <Card className="bg-gray-50">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">
-                Quick Actions
-              </h3>
-              <div className="space-y-2">
-                <Button
-                  size="sm"
-                  icon={Eye}
-                  onClick={handleViewFile}
-                  fullWidth
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  View File
-                </Button>
 
-                {!resource.userRated && resource.status === "approved" && (
-                  <Button
-                    size="sm"
-                    icon={Star}
-                    onClick={() => setShowRatingModal(true)}
-                    fullWidth
-                    className="bg-yellow-500 text-white hover:bg-yellow-600"
-                  >
-                    Rate Resource
-                  </Button>
-                )}
-
-                {resource.status === "pending" && isAdmin && (
-                  <>
-                    <Button
-                      size="sm"
-                      icon={CheckCircle}
-                      onClick={() => setShowApproveModal(true)}
-                      fullWidth
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Approve Resource
-                    </Button>
-                    <Button
-                      size="sm"
-                      icon={XCircle}
-                      variant="outline"
-                      onClick={() => setShowRejectModal(true)}
-                      fullWidth
-                      className="border-red-300 text-red-600 hover:bg-red-50"
-                    >
-                      Reject Resource
-                    </Button>
-                  </>
-                )}
-
-                {isAdmin && (
-                  <Button
-                    size="sm"
-                    icon={Trash2}
-                    variant="outline"
-                    onClick={() => setShowDeleteModal(true)}
-                    fullWidth
-                    className="border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    Delete Resource
-                  </Button>
-                )}
-              </div>
-            </Card>
           </div>
         </div>
       </div>
