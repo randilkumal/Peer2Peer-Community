@@ -486,8 +486,9 @@ exports.downloadResource = async (req, res) => {
     
     // Send the file as an attachment
     const path = require('path');
-    // resource.fileUrl is formatted like "/uploads/resources/xxx.pdf"
-    const filePath = path.join(__dirname, '..', resource.fileUrl);
+    // Remove leading slash to prevent absolute path resolution issues on Windows
+    const relativeUrl = resource.fileUrl.startsWith('/') ? resource.fileUrl.substring(1) : resource.fileUrl;
+    const filePath = path.join(__dirname, '..', relativeUrl);
     res.download(filePath, resource.fileName || 'download-file');
     
   } catch (error) {
@@ -521,7 +522,17 @@ exports.viewResource = async (req, res) => {
     }
     
     const path = require('path');
-    const filePath = path.join(__dirname, '..', resource.fileUrl);
+    const fs = require('fs');
+    
+    const relativeUrl = resource.fileUrl.startsWith('/') ? resource.fileUrl.substring(1) : resource.fileUrl;
+    const filePath = path.join(__dirname, '..', relativeUrl);
+    
+    if (!fs.existsSync(filePath)) {
+         return res.status(404).send('File not found on server');
+    }
+
+    res.setHeader('Content-Type', resource.fileType || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${resource.fileName}"`);
     res.sendFile(filePath);
   } catch (error) {
     console.error('View resource error:', error);

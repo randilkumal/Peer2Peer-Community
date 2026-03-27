@@ -6,7 +6,7 @@ import { X, Download, FileText, File, FileArchive, FileSpreadsheet, AlertCircle 
 import API from '../../utils/api';
 import toast from 'react-hot-toast';
 
-const FileViewer = ({ isOpen, onClose, fileUrl, fileName, fileType }) => {
+const FileViewer = ({ isOpen, onClose, fileUrl, fileName, fileType, downloadUrl }) => {
   const [loading, setLoading] = useState(true);
   const [fileContent, setFileContent] = useState(null);
   const [error, setError] = useState(null);
@@ -15,13 +15,12 @@ const FileViewer = ({ isOpen, onClose, fileUrl, fileName, fileType }) => {
   useEffect(() => {
     if (isOpen && fileUrl) {
       const type = fileType?.toLowerCase() || '';
-      // For PDFs, we bypass the blob loading and use the secure stream directly
       if (type.includes('pdf')) {
         const token = localStorage.getItem('token');
         const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         const url = fileUrl.startsWith('http') 
           ? fileUrl 
-          : `${apiBase.replace(/\/$/, '')}${fileUrl}?token=${token}`;
+          : fileUrl.includes('/uploads') ? `${apiBase.replace(/\/api\/?$/, '')}${fileUrl}` : `${apiBase.replace(/\/$/, '')}${fileUrl}?token=${token}`;
         
         setFileContent(url);
         setLoading(false);
@@ -77,11 +76,16 @@ const FileViewer = ({ isOpen, onClose, fileUrl, fileName, fileType }) => {
       link.click();
       link.remove();
       toast.success('Download started');
+    } else if (downloadUrl) {
+      const token = localStorage.getItem('token');
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const dUrl = downloadUrl.startsWith('http') 
+        ? downloadUrl 
+        : `${apiBase.replace(/\/$/, '')}${downloadUrl}?token=${token}`;
+      window.open(dUrl, '_blank');
     } else if (fileContent && typeof fileContent === 'string' && fileContent.startsWith('http')) {
-      // If it's a directly linked stream like a PDF, just open the download version of it
-      // The fileContent is the /view endpoint, we should replace /view with /download
-      const downloadUrl = fileContent.replace('/view', '/download');
-      window.open(downloadUrl, '_blank');
+      const dUrl = fileContent.replace('/view', '/download');
+      window.open(dUrl, '_blank');
     } else {
       const token = localStorage.getItem('token');
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';

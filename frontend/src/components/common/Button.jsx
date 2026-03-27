@@ -20,7 +20,7 @@ const Button = ({
   const variants = {
     primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
     secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500',
-    outline: 'border-2 border-primary-500 text-primary-500 hover:bg-primary-50 focus:ring-primary-500',
+    outline: 'border-2 border-blue-200 text-blue-500 hover:bg-blue-50 hover:border-blue-300 focus:ring-blue-200',
     danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
     success: 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-500',
     warning: 'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500',
