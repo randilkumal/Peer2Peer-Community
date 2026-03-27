@@ -1,8 +1,9 @@
 import { format } from 'date-fns';
 
-export const formatDate = (date) => {
+export const formatDate = (date, includeTime = false) => {
   if (!date) return '';
-  return format(new Date(date), 'MMM dd, yyyy');
+  const formatStr = includeTime ? 'MMM dd, yyyy HH:mm' : 'MMM dd, yyyy';
+  return format(new Date(date), formatStr);
 };
 
 export const formatDateTime = (date) => {

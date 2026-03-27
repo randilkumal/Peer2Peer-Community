@@ -73,13 +73,7 @@ exports.createResourceReview = async (req, res) => {
       });
     }
 
-    // Prevent creator from reviewing their own resource
-    if (resource.uploadedBy && resource.uploadedBy.toString() === rid.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'You cannot review your own uploaded resource.'
-      });
-    }
+    // (Restriction removed: Users CAN review their own resource now based on request)
 
     // Check if user already reviewed this resource
     const existingReview = await Review.findOne({
@@ -90,21 +84,22 @@ exports.createResourceReview = async (req, res) => {
       ]
     });
 
+    let review;
     if (existingReview) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already reviewed this resource'
+      // Update existing review instead of throwing an error
+      existingReview.rating = rating;
+      if (comment !== undefined) existingReview.comment = comment;
+      review = await existingReview.save();
+    } else {
+      // Create new review
+      review = await Review.create({
+        reviewType: 'resource',
+        resource: resourceId,
+        reviewer: rid,
+        rating,
+        comment
       });
     }
-
-    // Create review
-    const review = await Review.create({
-      reviewType: 'resource',
-      resource: resourceId,
-      reviewer: rid,
-      rating,
-      comment
-    });
 
     await review.populate('reviewer', 'name fullName email profilePicture');
 

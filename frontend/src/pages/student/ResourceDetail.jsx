@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
+import FileViewer from '../../components/common/FileViewer';
 import API from '../../utils/api';
 import { 
   FileText, 
@@ -17,7 +18,11 @@ import {
   Eye,
   MessageSquare,
   Clock,
-  File
+  File,
+  Sparkles,
+  BookOpen,
+  GraduationCap,
+  ExternalLink
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -29,7 +34,9 @@ const StudentResourceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [resource, setResource] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
 
   useEffect(() => {
     fetchResourceDetails();
@@ -41,15 +48,31 @@ const StudentResourceDetail = () => {
       const response = await API.get(`/resources/${id}`);
       setResource(response.data.resource);
       
-      // Fetch reviews
       const reviewsResponse = await API.get(`/reviews/resource/${id}`);
       setReviews(reviewsResponse.data.reviews || []);
+      
+      const resData = response.data.resource;
+      if (resData?.title) {
+        fetchAISuggestions(resData.title);
+      }
     } catch (error) {
       toast.error('Failed to load resource details');
-      console.error('Error fetching resource:', error);
       navigate('/resources');
     } finally {
       if (!silent) setLoading(false);
+    }
+  };
+
+  const fetchAISuggestions = async (query) => {
+    try {
+      setLoadingAI(true);
+      const response = await API.get(`/ai/suggest-resources?query=${encodeURIComponent(query)}`);
+      setAiSuggestions(response.data.suggestions || []);
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      setAiSuggestions([]);
+    } finally {
+      setLoadingAI(false);
     }
   };
 
@@ -58,8 +81,6 @@ const StudentResourceDetail = () => {
       const token = localStorage.getItem('token');
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       window.open(`${apiBase.replace(/\/$/, '')}/resources/${id}/download?token=${token}`, '_blank');
-      
-      // Update local count
       setResource(prev => ({ ...prev, downloadCount: (prev.downloadCount || 0) + 1 }));
     } catch (error) {
       toast.error('Download failed');
@@ -68,24 +89,22 @@ const StudentResourceDetail = () => {
 
   const handleView = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      // Open the file in a new tab to view it directly in the browser
-      window.open(`${apiBase.replace(/\/$/, '')}/resources/${id}/view?token=${token}`, '_blank');
-      
-      // Keep track of views locally to update UI
+      setShowViewer(true);
+      // Optimistically update the view count
       setResource(prev => ({ ...prev, viewCount: (prev.viewCount || 0) + 1 }));
     } catch (error) {
-      toast.error('Failed to view file');
+      toast.error('Failed to open file viewer');
     }
   };
 
   const getFileIcon = (fileType) => {
-    if (!fileType) return <File className="w-12 h-12" />;
-    const type = fileType.toLowerCase();
-    if (type.includes('pdf')) return <FileText className="w-12 h-12 text-red-500" />;
-    if (type.includes('doc')) return <FileText className="w-12 h-12 text-blue-500" />;
-    return <File className="w-12 h-12 text-gray-500" />;
+    return (
+      <div className="w-20 min-w-[5rem] h-20 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm relative overflow-hidden group">
+        <div className="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <FileText className="w-10 h-10 text-red-500 relative z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500" />
+      </div>
+    );
   };
 
   if (loading) {
@@ -100,183 +119,275 @@ const StudentResourceDetail = () => {
 
   if (!resource) return null;
 
+  // Calculate rating distribution
+  const ratingDistribution = [5, 4, 3, 2, 1].map(star => ({
+    star,
+    count: reviews.filter(r => Math.round(r.rating) === star).length,
+    percentage: reviews.length > 0 ? (reviews.filter(r => Math.round(r.rating) === star).length / reviews.length) * 100 : 0
+  }));
+
   return (
     <DashboardLayout>
-      <div className="p-8 max-w-5xl mx-auto">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          icon={ArrowLeft}
-          onClick={() => navigate('/resources')}
-          className="mb-6"
-        >
-          Back to Resources
-        </Button>
+      <div className="p-8 max-w-[1400px] mx-auto">
+        {/* Main Content Layout - 2 Columns */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Left Column - Main Details & Reviews */}
+          <div className="flex-1 space-y-6">
+            {/* Back Breadcrumb */}
+            <button
+              type="button"
+              onClick={() => navigate('/resources')}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-primary-600 transition-colors group w-fit"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back to Resources
+            </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="p-0 overflow-hidden shadow-xl border-0 rounded-3xl">
-              <div className="bg-primary-600 p-8 text-white">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                      {getFileIcon(resource.fileType)}
+            {/* Main Resource Card */}
+            <Card className="p-8 border-gray-200/60 shadow-sm rounded-xl overflow-hidden relative">
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Visual Icon */}
+                {getFileIcon(resource.fileType)}
+
+                {/* Header Content */}
+                <div className="flex-1 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="info" className="!bg-blue-100 !text-blue-600 font-normal px-3 py-1 rounded-lg">
+                      {resource.moduleCode}
+                    </Badge>
+                    <Badge variant="danger" className="!bg-red-50 !text-red-500 font-normal px-3 py-1 rounded-lg">
+                      {resource.fileType?.split('/')?.pop()?.toUpperCase() || 'PDF'}
+                    </Badge>
+                  </div>
+
+                  <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+                    {resource.title}
+                  </h1>
+
+                  <div className="inline-block">
+                    {(() => {
+                      const typeColors = {
+                        'Lecture Notes': 'bg-blue-50 text-blue-900',
+                        'Assignments':   'bg-green-50 text-green-900',
+                        'Past Papers':   'bg-red-50 text-red-900',
+                        'Textbooks':     'bg-purple-50 text-purple-900',
+                        'Study Guides':  'bg-amber-50 text-amber-900',
+                        'Other':         'bg-slate-50 text-slate-900',
+                      };
+                      const colors = typeColors[resource.resourceType] || 'bg-slate-50 text-slate-900';
+                      return (
+                        <span className={`inline-flex px-3 py-1 rounded-lg text-sm font-bold ${colors}`}>
+                          {resource.resourceType}
+                        </span>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="flex items-center gap-6 text-sm font-medium text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <Download className="w-4 h-4" />
+                      <span>{resource.downloadCount || 0} downloads</span>
                     </div>
-                    <div>
-                      <Badge variant="white" className="mb-2 text-primary-700 font-bold uppercase tracking-wider text-xs">
-                        {resource.resourceType}
-                      </Badge>
-                      <h1 className="text-3xl font-black leading-tight">{resource.title}</h1>
-                      <p className="text-primary-100 font-bold mt-1 tracking-widest">{resource.moduleCode}</p>
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-bold text-gray-900">{resource.averageRating?.toFixed(1) || '0.0'}</span>
+                      <span className="text-gray-400 text-xs mt-0.5">({reviews.length})</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-8 bg-white">
-                <div className="space-y-8">
-                  {/* Performance stats row */}
-                  <div className="flex items-center gap-12 border-b border-gray-100 pb-8">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Rating</span>
-                      <div className="flex items-center gap-2">
-                        <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xl font-black text-gray-900">{resource.averageRating?.toFixed(1) || '0.0'}</span>
-                        <span className="text-xs font-bold text-gray-400">({reviews.length} reviews)</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col border-l border-gray-100 pl-12">
-                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Downloads</span>
-                      <div className="flex items-center gap-2">
-                        <Download className="w-5 h-5 text-primary-500" />
-                        <span className="text-xl font-black text-gray-900">{resource.downloadCount || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col border-l border-gray-100 pl-12">
-                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Views</span>
-                      <div className="flex items-center gap-2">
-                        <Eye className="w-5 h-5 text-gray-400" />
-                        <span className="text-xl font-black text-gray-900">{resource.viewCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 mb-3">Description</h3>
-                    <p className="text-gray-600 leading-relaxed bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                      {resource.description || 'No description provided for this resource.'}
-                    </p>
-                  </div>
-
-                  {/* Reviews Section */}
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-2">
-                      User Experience Feed <MessageSquare className="w-5 h-5 text-primary-500" />
-                    </h3>
-                    {reviews.length === 0 ? (
-                      <div className="text-center py-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                        <Star className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                        <p className="text-slate-500 font-bold">No reviews shared yet. Be the first to download and share your thoughts!</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {reviews.map((rev) => (
-                          <div key={rev._id} className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center font-black text-primary-600 text-sm">
-                                  {rev.reviewer?.fullName?.charAt(0) || 'U'}
-                                </div>
-                                <div>
-                                  <p className="font-black text-gray-900 leading-none mb-1">{rev.reviewer?.fullName || 'Academic Member'}</p>
-                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{formatDate(rev.createdAt)}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 rounded-full">
-                                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs font-black text-gray-700">{rev.rating}</span>
-                              </div>
-                            </div>
-                            <p className="text-gray-600 text-sm leading-relaxed italic pr-4">"{rev.comment}"</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+              {/* Description Section */}
+              <div className="mt-8 space-y-3">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Description</h3>
+                <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-line">
+                  {resource.description || resource.title}
+                </p>
               </div>
-            </Card>
-          </div>
 
-          {/* Sidebar / Stats */}
-          <div className="space-y-6">
-            <Card className="p-6 border-0 shadow-lg rounded-3xl bg-slate-900 text-white">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">File Specs</h3>
-              <div className="space-y-5">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">File Name</span>
-                  <span className="text-sm font-bold truncate pr-4">{resource.fileName}</span>
+              {/* File Information Box */}
+              <div className="mt-8 bg-gray-50/50 rounded-xl p-6 border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">File Information</p>
+                  <p className="text-xs font-bold text-gray-400">File Name</p>
+                  <p className="text-sm font-medium text-gray-700 break-all">{resource.fileName}</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Size</span>
-                    <span className="text-sm font-bold">{(resource.fileSize / 1024 / 1024).toFixed(2)} MB</span>
-                  </div>
-                  <div className="flex flex-col text-right">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Extension</span>
-                    <span className="text-sm font-bold uppercase">{resource.fileType?.split('/')?.pop() || 'File'}</span>
-                  </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] hidden md:block">&nbsp;</p>
+                  <p className="text-xs font-bold text-gray-400">Uploaded</p>
+                  <p className="text-sm font-medium text-gray-700">{formatDate(resource.createdAt)}</p>
                 </div>
               </div>
 
-              <div className="space-y-3 mt-8">
+              {/* Action Buttons */}
+              <div className="mt-6 flex flex-col sm:flex-row gap-4">
                 <Button
                   variant="primary"
                   icon={Eye}
+                  iconPosition="left"
                   onClick={handleView}
-                  fullWidth
-                  className="py-3.5 rounded-2xl font-black bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors shadow-lg"
+                  className="flex-1 !rounded-lg font-bold py-3.5 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-sm justify-center"
                 >
                   View File
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="outline"
                   icon={Download}
+                  iconPosition="left"
                   onClick={handleDownload}
-                  fullWidth
-                  className="py-3.5 rounded-2xl font-black bg-blue-500 hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/20"
+                  className="flex-1 !rounded-lg font-bold py-3.5 border-blue-200 text-blue-400 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-500 transition-all text-sm justify-center shadow-sm"
                 >
-                  Download Now
+                  Download
                 </Button>
               </div>
             </Card>
 
-            <Card className="p-6 border-gray-100 shadow-sm rounded-3xl">
-              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6">Uploader Context</h3>
-              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="w-12 h-12 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-700 font-black text-lg shadow-sm">
-                  {resource.uploader?.fullName?.charAt(0) || 'U'}
+            {/* Reviews & Ratings Section */}
+            <Card className="p-8 border-gray-200/60 shadow-sm rounded-xl">
+              <h2 className="text-lg font-bold text-gray-900 mb-8 font-primary">Reviews & Ratings</h2>
+              
+              <div className="flex flex-col lg:flex-row gap-12 items-start bg-gray-50/30 rounded-2xl p-8 border border-gray-100">
+                {/* Score Display */}
+                <div className="flex flex-col items-center justify-center text-center space-y-2 lg:w-48 self-center">
+                  <span className="text-7xl font-bold text-gray-900 tracking-tight">
+                    {resource.averageRating?.toFixed(1) || '0.0'}
+                  </span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        className={`w-6 h-6 ${s <= Math.round(resource.averageRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} 
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium text-gray-500">{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</p>
                 </div>
-                <div>
-                  <p className="font-black text-gray-900 leading-none mb-1">{resource.uploader?.fullName || 'Member'}</p>
-                  <p className="text-xs font-bold text-primary-600">{resource.uploader?.role || 'Student'}</p>
+
+                {/* Distribution Bar */}
+                <div className="flex-1 w-full space-y-3">
+                  {ratingDistribution.map((item) => (
+                    <div key={item.star} className="flex items-center gap-4 group">
+                      <span className="text-sm font-bold text-gray-500 w-4 tracking-tighter">{item.star} ★</span>
+                      <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-yellow-400 rounded-full transition-all duration-500" 
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-bold text-gray-400 w-4 text-right">{item.count}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-sm text-gray-500 font-bold">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Uploaded {formatDate(resource.createdAt)}</span>
+
+              {/* Review List */}
+              <div className="mt-12 space-y-6">
+                {reviews.map((rev) => (
+                  <div key={rev._id} className="p-6 bg-white border border-gray-100 rounded-xl hover:shadow-sm transition-all group">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg">
+                          {rev.reviewer?.fullName?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{rev.reviewer?.fullName || 'Academic Member'}</p>
+                          <p className="text-xs font-medium text-gray-400">{formatDate(rev.createdAt, true) || 'Mar 20, 2026'}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star key={s} className={`w-4 h-4 ${s <= rev.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-4 text-gray-600 text-sm leading-relaxed">{rev.comment}</p>
+                  </div>
+                ))}
+                
+                {reviews.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-400 font-medium">No reviews yet for this resource.</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="w-full lg:w-[350px] space-y-6 flex-shrink-0">
+            {/* Uploaded By Card */}
+            <Card className="p-6 border-gray-200/60 shadow-sm rounded-xl relative overflow-hidden group bg-white">
+              <GraduationCap className="absolute -right-6 -top-6 w-32 h-32 text-gray-50 opacity-50 group-hover:scale-110 transition-transform duration-500" />
+              
+              <div className="relative z-10">
+                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2 mb-5">
+                  <GraduationCap className="w-4 h-4 text-gray-500" /> Uploaded By
+                </h3>
+                
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center font-black text-blue-600 text-xl border-2 border-white shadow-sm">
+                    {resource.uploader?.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-gray-900 leading-tight">
+                      {resource.uploader?.fullName || 'Academic Member'}
+                    </p>
+                    <p className="text-xs font-semibold text-gray-400 capitalize mt-1">
+                      {resource.uploader?.role || 'Student'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-500 font-bold">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span>Status: <span className="text-green-600">{resource.status}</span></span>
+
+                <div className="space-y-5 pt-5 border-t border-gray-100">
+                  <div className="flex items-start gap-4">
+                    <div className="mt-0.5 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Academic Year</p>
+                      <p className="text-sm font-semibold text-gray-700 mt-0.5">
+                        {resource.uploader?.academicYear || 'Year 1'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="mt-0.5 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Specialization</p>
+                      <p className="text-sm font-semibold text-gray-700 mt-0.5">
+                        {resource.uploader?.specialization || 'IT'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </Card>
+
+            {/* Future Feature Area */}
+            <Card className="p-8 border-dashed border-2 border-gray-200 shadow-none rounded-xl bg-gray-50 flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-full bg-gray-200/50 flex items-center justify-center mb-4">
+                <Sparkles className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-700 mb-1">AI Assistant</h3>
+              <p className="text-xs font-medium text-gray-500">To be implemented</p>
             </Card>
           </div>
         </div>
       </div>
+      {resource && showViewer && (
+        <FileViewer
+          isOpen={showViewer}
+          onClose={() => setShowViewer(false)}
+          fileUrl={resource.fileUrl}
+          downloadUrl={`/resources/${id}/download`}
+          fileName={resource.fileName}
+          fileType={resource.fileType}
+        />
+      )}
     </DashboardLayout>
   );
 };

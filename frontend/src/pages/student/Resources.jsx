@@ -351,37 +351,37 @@ const StudentResources = () => {
     const typeConfigs = {
       'Lecture Notes': { 
         bg: 'bg-blue-50', 
-        text: 'text-blue-700', 
+        text: 'text-blue-900', 
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-600'
       },
       'Assignments': { 
         bg: 'bg-green-50', 
-        text: 'text-green-700', 
+        text: 'text-green-900', 
         iconBg: 'bg-green-100',
         iconColor: 'text-green-600'
       },
       'Past Papers': { 
         bg: 'bg-red-50', 
-        text: 'text-red-700', 
+        text: 'text-red-900', 
         iconBg: 'bg-red-100',
         iconColor: 'text-red-600'
       },
       'Textbooks': { 
         bg: 'bg-purple-50', 
-        text: 'text-purple-700', 
+        text: 'text-purple-900', 
         iconBg: 'bg-purple-100',
         iconColor: 'text-purple-600'
       },
       'Study Guides': { 
         bg: 'bg-amber-50', 
-        text: 'text-amber-700', 
+        text: 'text-amber-900', 
         iconBg: 'bg-amber-100',
         iconColor: 'text-amber-600'
       },
       'Other': { 
         bg: 'bg-slate-50', 
-        text: 'text-slate-700', 
+        text: 'text-slate-900', 
         iconBg: 'bg-slate-100',
         iconColor: 'text-slate-600'
       }
@@ -398,7 +398,7 @@ const StudentResources = () => {
             <div className={`w-14 h-14 ${config.iconBg} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
               {getFileIcon(resource.fileType, `w-7 h-7 ${config.iconColor}`)}
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-bold ${config.bg} ${config.text} tracking-wider shadow-sm`}>
+            <div className={`px-4 py-2 rounded-full text-sm font-bold ${config.bg} ${config.text} tracking-wide shadow-sm`}>
               {resource.resourceType}
             </div>
           </div>
@@ -461,25 +461,38 @@ const StudentResources = () => {
             </div>
           </div>
 
-          {/* Action Button */}
-          <Button
-            onClick={() => handleDownload(resource._id)}
-            icon={Download}
-            variant="primary"
-            className="w-full py-1.5 rounded-2xl font-medium shadow-md active:scale-95 transition-all text-sm tracking-wide"
-          >
-            Download Material
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="primary"
+              icon={Eye}
+              iconPosition="left"
+              className="flex-1 !rounded-2xl font-bold py-2 shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm tracking-wide"
+              onClick={() => navigate(`/student/resources/${resource._id}`)}
+            >
+              View
+            </Button>
+            <Button
+              variant="outline"
+              icon={Download}
+              iconPosition="left"
+              className="flex-1 !rounded-2xl font-bold py-2 border-2 border-blue-200 text-blue-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-300 active:scale-95 transition-all text-sm tracking-wide"
+              onClick={() => handleDownload(resource._id)}
+            >
+              Get
+            </Button>
+          </div>
 
           {/* Contextual actions */}
-          {showActions && (isOwner || activeTab === 'history' || true) && (
-            <div className="flex gap-2 mt-2">
+          {showActions && (isOwner || (activeTab === 'history' && !resource.userRated)) && (
+            <div className="flex gap-2 mt-3">
               {isOwner && activeTab === 'my-uploads' && (
                 <Button
                   size="sm"
                   variant="ghost"
                   icon={Trash2}
-                  className="flex-1 text-red-500 hover:bg-red-50 font-bold text-xs py-1"
+                  iconPosition="left"
+                  className="flex-1 text-red-500 hover:bg-red-50 font-bold text-xs py-1.5 !rounded-xl"
                   onClick={() => {
                     setSelectedResource(resource);
                     setShowDeleteModal(true);
@@ -493,7 +506,8 @@ const StudentResources = () => {
                   size="sm"
                   variant="ghost"
                   icon={Star}
-                  className="flex-1 text-amber-500 hover:bg-amber-50 font-bold text-xs py-1"
+                  iconPosition="left"
+                  className="flex-1 text-amber-500 hover:bg-amber-50 font-bold text-xs py-1.5 !rounded-xl"
                   onClick={() => {
                     setSelectedResource(resource);
                     setShowRatingModal(true);
@@ -502,15 +516,6 @@ const StudentResources = () => {
                   Rate Now
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="primary"
-                icon={Eye}
-                className="flex-1 font-medium text-sm py-1 shadow-sm rounded-2xl"
-                onClick={() => navigate(`/student/resources/${resource._id}`)}
-              >
-                Details
-              </Button>
             </div>
           )}
         </div>
@@ -628,6 +633,7 @@ const StudentResources = () => {
                   size="sm"
                   variant={filters.resourceType === '' ? 'primary' : 'outline'}
                   onClick={() => setFilters({ ...filters, resourceType: '' })}
+                  className={filters.resourceType !== '' ? '!border-gray-300 !text-blue-900 hover:!border-gray-400' : ''}
                 >
                   All Types
                 </Button>
@@ -637,6 +643,7 @@ const StudentResources = () => {
                     size="sm"
                     variant={filters.resourceType === type ? 'primary' : 'outline'}
                     onClick={() => setFilters({ ...filters, resourceType: type })}
+                    className={filters.resourceType !== type ? '!border-gray-300 !text-blue-900 hover:!border-gray-400' : ''}
                   >
                     {type}
                   </Button>

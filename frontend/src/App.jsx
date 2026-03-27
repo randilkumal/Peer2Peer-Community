@@ -9,6 +9,7 @@ import Login from './pages/auth/Login'
 // Student pages (implemented)
 import Dashboard from './pages/student/Dashboard'
 import Resources from './pages/student/Resources'
+import StudentResourceDetail from './pages/student/ResourceDetail'
 
 // Placeholder pages (to be implemented)
 import Groups from './pages/student/Groups'
@@ -80,7 +81,7 @@ function App() {
           />
           
           {/* Resource Detail - Role specific */}
-          <Route path="/student/resources/:id" element={<ProtectedRoute allowedRoles={['student', 'expert']}><Resources /></ProtectedRoute>} />
+          <Route path="/student/resources/:id" element={<ProtectedRoute allowedRoles={['student', 'expert']}><StudentResourceDetail /></ProtectedRoute>} />
           <Route path="/admin/resources/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminResourceDetail /></ProtectedRoute>} />
 
           <Route path="/groups" element={<Groups />} />
