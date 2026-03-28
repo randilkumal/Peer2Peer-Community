@@ -291,7 +291,7 @@ const AdminResourceDetail = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <div className="mx-auto max-w-[1400px] p-6">
         <div className="mb-6 flex items-center justify-between gap-4">
           <Button
             variant="ghost"
@@ -315,7 +315,7 @@ const AdminResourceDetail = () => {
         </div>
 
         {resource.status === "pending" && isAdmin && (
-          <Card className="mb-6 border-yellow-200 bg-yellow-50">
+          <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Clock className="h-6 w-6 text-yellow-600" />
@@ -354,8 +354,8 @@ const AdminResourceDetail = () => {
         )}
 
         {resource.status === "rejected" && resource.rejectionReason && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <div className="flex items-start gap-3">
+          <Card className="mb-4 border-red-200 bg-red-50">
+            <div className="flex items-start gap-4">
               <AlertCircle className="mt-0.5 h-5 w-5 text-red-600" />
               <div>
                 <h3 className="mb-1 font-semibold text-red-900">
@@ -369,8 +369,8 @@ const AdminResourceDetail = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
             <Card>
               <div className="mb-6 flex items-start gap-6">
                 <div className="flex-shrink-0">

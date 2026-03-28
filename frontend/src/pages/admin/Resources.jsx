@@ -235,7 +235,7 @@ const AdminResources = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <div className="mx-auto max-w-[1600px] p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Resource Management</h1>
