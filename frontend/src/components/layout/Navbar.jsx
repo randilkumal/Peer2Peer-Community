@@ -40,8 +40,8 @@ const Navbar = () => {
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-      <div className="px-6 py-4">
-        <div className="mx-auto max-w-[1400px]">
+      <div className="px-8 py-4">
+        <div>
           <div className="flex items-center justify-between gap-4">
             {/* Left Spacer */}
             <div className="flex-1"></div>

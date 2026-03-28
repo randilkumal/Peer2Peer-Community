@@ -91,6 +91,10 @@ const AdminResourceDetail = () => {
     toast.success("Resource details refreshed");
   };
 
+
+
+
+  // Rating Validation
   const handleRateResource = async () => {
     if (rating === 0) {
       toast.error("Please select a rating");
@@ -122,6 +126,8 @@ const AdminResourceDetail = () => {
     }
   };
 
+  
+  //Validate Approval Action
   const handleApprove = async () => {
     try {
       setActionLoading(true);
@@ -138,6 +144,8 @@ const AdminResourceDetail = () => {
     }
   };
 
+
+  //Rejection Reason Validation
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
       toast.error("Please provide a rejection reason");
@@ -291,7 +299,7 @@ const AdminResourceDetail = () => {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-[1400px] p-6">
+      <div className="p-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <Button
             variant="ghost"
