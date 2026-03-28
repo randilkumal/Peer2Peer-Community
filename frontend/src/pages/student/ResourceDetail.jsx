@@ -6,7 +6,6 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
-import FileViewer from '../../components/common/FileViewer';
 import API from '../../utils/api';
 import { 
   FileText, 
@@ -15,7 +14,6 @@ import {
   Calendar,
   User,
   Star,
-  Eye,
   MessageSquare,
   Clock,
   File,
@@ -36,7 +34,6 @@ const StudentResourceDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
-  const [showViewer, setShowViewer] = useState(false);
 
   useEffect(() => {
     fetchResourceDetails();
@@ -87,15 +84,6 @@ const StudentResourceDetail = () => {
     }
   };
 
-  const handleView = async () => {
-    try {
-      setShowViewer(true);
-      // Optimistically update the view count
-      setResource(prev => ({ ...prev, viewCount: (prev.viewCount || 0) + 1 }));
-    } catch (error) {
-      toast.error('Failed to open file viewer');
-    }
-  };
 
   const getFileIcon = (fileType, resourceType) => {
     const typeThemes = {
@@ -234,19 +222,10 @@ const StudentResourceDetail = () => {
               <div className="mt-6 flex flex-col sm:flex-row gap-4">
                 <Button
                   variant="primary"
-                  icon={Eye}
-                  iconPosition="left"
-                  onClick={handleView}
-                  className="flex-1 !rounded-lg font-bold py-3.5 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-sm justify-center"
-                >
-                  View File
-                </Button>
-                <Button
-                  variant="outline"
                   icon={Download}
                   iconPosition="left"
                   onClick={handleDownload}
-                  className="flex-1 !rounded-lg font-bold py-3.5 border-blue-200 text-blue-400 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-500 transition-all text-sm justify-center shadow-sm"
+                  className="flex-1 !rounded-lg font-bold py-3.5 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-sm justify-center"
                 >
                   Download
                 </Button>
@@ -388,16 +367,6 @@ const StudentResourceDetail = () => {
           </div>
         </div>
       </div>
-      {resource && showViewer && (
-        <FileViewer
-          isOpen={showViewer}
-          onClose={() => setShowViewer(false)}
-          fileUrl={resource.fileUrl}
-          downloadUrl={`/resources/${id}/download`}
-          fileName={resource.fileName}
-          fileType={resource.fileType}
-        />
-      )}
     </DashboardLayout>
   );
 };

@@ -7,13 +7,11 @@ import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import Modal from "../../components/common/Modal";
-import FileViewer from "../../components/common/FileViewer";
 import API from "../../utils/api";
 import {
   ArrowLeft,
   Download,
   Star,
-  Eye,
   FileText,
   File,
   FileArchive,
@@ -40,7 +38,6 @@ const AdminResourceDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
-  const [showFileViewer, setShowFileViewer] = useState(false);
 
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -186,9 +183,6 @@ const AdminResourceDetail = () => {
     }
   };
 
-  const handleViewFile = () => {
-    setShowFileViewer(true);
-  };
 
   const formatFileSize = (bytes) => {
     if (!bytes || Number.isNaN(bytes)) return "N/A";
@@ -476,15 +470,6 @@ const AdminResourceDetail = () => {
 
               {/* Action Buttons */}
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row flex-wrap gap-4">
-                <Button
-                  variant="outline"
-                  icon={Eye}
-                  iconPosition="left"
-                  onClick={handleViewFile}
-                  className="flex-1 min-w-[140px] !rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3.5 text-sm justify-center shadow-sm"
-                >
-                  View File
-                </Button>
 
                 <Button
                   variant="outline"
@@ -741,13 +726,6 @@ const AdminResourceDetail = () => {
         </div>
       </div>
 
-      <FileViewer
-        isOpen={showFileViewer}
-        onClose={() => setShowFileViewer(false)}
-        fileUrl={`/resources/${resource._id}/view`}
-        fileName={resource.fileName}
-        fileType={resource.fileType}
-      />
 
       <Modal
         isOpen={showApproveModal}

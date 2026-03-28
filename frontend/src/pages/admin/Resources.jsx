@@ -12,7 +12,6 @@ import API from "../../utils/api";
 import {
   FileText,
   Search,
-  Eye,
   CheckCircle,
   XCircle,
   Clock,
@@ -464,15 +463,6 @@ const AdminResources = () => {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            icon={Eye}
-                            className="!rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 text-xs py-1.5 font-semibold"
-                            onClick={() => navigate(`/admin/resources/${resource._id}`)}
-                          >
-                            View
-                          </Button>
 
                           {isAdmin && resource.status === "pending" && (
                             <>

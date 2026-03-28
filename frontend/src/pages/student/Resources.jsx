@@ -22,7 +22,6 @@ import {
   FileArchive,
   FileSpreadsheet,
   X,
-  Eye,
   Trash2,
   Clock,
   CheckCircle,
@@ -467,18 +466,9 @@ const StudentResources = () => {
           <div className="flex items-center gap-3">
             <Button
               variant="primary"
-              icon={Eye}
-              iconPosition="left"
-              className="flex-1 !rounded-2xl font-bold py-2 shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm tracking-wide"
-              onClick={() => navigate(`/student/resources/${resource._id}`)}
-            >
-              View
-            </Button>
-            <Button
-              variant="outline"
               icon={Download}
               iconPosition="left"
-              className="flex-1 !rounded-2xl font-bold py-2 border-2 border-blue-200 text-blue-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-300 active:scale-95 transition-all text-sm tracking-wide"
+              className="flex-1 !rounded-2xl font-bold py-3 shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm tracking-wide bg-blue-600 hover:bg-blue-700"
               onClick={() => handleDownload(resource._id)}
             >
               Get
