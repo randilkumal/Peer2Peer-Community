@@ -25,7 +25,8 @@ import {
   Trash2,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Globe
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -43,8 +44,8 @@ const StudentResources = () => {
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
-  // const [aiSuggestions, setAiSuggestions] = useState([]);
-  // const [loadingAI, setLoadingAI] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(false);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -89,11 +90,11 @@ const StudentResources = () => {
   }, [activeTab, filters, user]); // Change from user?._id to user
 
   // AI Suggestions when search changes
-  /* useEffect(() => {
+  useEffect(() => {
     if (searchQuery && searchQuery.length > 2 && activeTab === 'ai-suggestions') {
       fetchAISuggestions();
     }
-  }, [searchQuery, activeTab]); */
+  }, [searchQuery, activeTab]);
 
   // Load full module objects for the student's enrolledModules list
   const loadEnrolledModules = async () => {
@@ -168,7 +169,7 @@ const StudentResources = () => {
   }
 };
 
-  /* const fetchAISuggestions = async () => {
+  const fetchAISuggestions = async () => {
     try {
       setLoadingAI(true);
       const response = await API.get(`/ai/suggest-resources?query=${encodeURIComponent(searchQuery)}`);
@@ -179,7 +180,7 @@ const StudentResources = () => {
     } finally {
       setLoadingAI(false);
     }
-  }; */
+  };
 
   const handleUpload = async () => {
     // Reset errors
@@ -665,63 +666,167 @@ const StudentResources = () => {
                 </span>
               </button>
             );
-          })}
-        </div>
+        })}
+      </div>
 
-        {/* AI Suggestions Tab Placeholder */}
-        {activeTab === 'ai-suggestions' && (
-          <Card className="p-12 border-dashed border-2 border-gray-200 shadow-none rounded-3xl bg-gray-50 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-6">
-              <Sparkles className="w-8 h-8 text-purple-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2 font-primary">AI Suggestions</h3>
-            <p className="text-gray-500 font-medium italic">To be implemented!</p>
-          </Card>
-        )}
-
-        {/* AI Suggestions Tab (HIDDEN LOGIC) */}
-        {/* {activeTab === 'ai-suggestions' && ( ... ) } */}
-
-        {/* Resources Grid */}
-        {activeTab !== 'ai-suggestions' && (
-          <>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader size="lg" text="Loading resources..." />
+      {/* AI Suggestions Tab Implementation */}
+      {activeTab === 'ai-suggestions' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-blue-600/10 to-primary-600/10 border border-blue-100 rounded-3xl p-6 mb-8">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <Sparkles className="w-6 h-6" />
               </div>
-            ) : filteredResources.length === 0 ? (
-              <Card>
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No resources found
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {searchQuery
-                      ? 'Try adjusting your search or filters'
-                      : activeTab === 'my-uploads'
-                      ? 'You haven\'t uploaded any resources yet'
-                      : activeTab === 'history'
-                      ? 'You haven\'t downloaded any resources yet'
-                      : 'No approved resources available'}
-                  </p>
-                  {(activeTab === 'all' || activeTab === 'my-uploads') && (
-                    <Button onClick={() => setShowUploadModal(true)} icon={Upload}>
-                      Upload Resource
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredResources.map((resource) => (
-                  <ResourceCard key={resource._id} resource={resource} />
-                ))}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">AI Assistant</h2>
+                <p className="text-gray-600 text-sm">Personalized recommendations for your studies</p>
+              </div>
+            </div>
+            {!searchQuery && (
+              <div className="bg-white/60 backdrop-blur-sm border border-blue-50 rounded-2xl p-4 mt-4">
+                <p className="text-blue-800 text-sm font-medium flex items-center gap-2">
+                  <Search className="w-4 h-4" />
+                  Search for topics to get AI suggestions.
+                </p>
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+
+          {loadingAI ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative w-20 h-20 mb-4">
+                <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+                <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-blue-600 animate-pulse" />
+              </div>
+              <p className="text-gray-500 font-medium animate-pulse">Analyzing matches...</p>
+            </div>
+          ) : !searchQuery ? (
+            <Card className="p-12 border-dashed border-2 border-gray-200 shadow-none rounded-3xl bg-gray-50 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to explore?</h3>
+              <p className="text-gray-500 max-w-md italic">
+                Search by module or keyword to see AI recommendations.
+              </p>
+            </Card>
+          ) : aiSuggestions.length === 0 ? (
+            <Card className="p-12 border-dashed border-2 border-gray-200 shadow-none rounded-3xl bg-gray-50 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center mb-6">
+                <XCircle className="w-8 h-8 text-yellow-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No results found</h3>
+              <p className="text-gray-500 max-w-md">
+                Try different keywords to see more suggestions.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {aiSuggestions.map((suggestion, index) => (
+                <Card 
+                  key={index} 
+                  className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-white group relative"
+                >
+                  <div className="p-6 pt-8 flex-1 flex flex-col">
+                    <div className="w-12 h-12 mb-5 rounded-2xl flex items-center justify-center shadow-inner bg-blue-50 text-blue-600">
+                      {suggestion.isGeneric ? (
+                        <Globe className="w-6 h-6" />
+                      ) : (
+                        <FileText className="w-6 h-6" />
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="primary" className="text-[10px] uppercase font-black px-2.5 py-1">
+                          {suggestion.type}
+                        </Badge>
+                      </div>
+                      
+                      <h3 className="text-lg font-extrabold text-[#0a3d62] leading-tight mb-3 group-hover:text-blue-600 transition-colors">
+                        {suggestion.title}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-3 mb-6 font-medium">
+                        {suggestion.description}
+                      </p>
+                    </div>
+
+                    <div className="h-px bg-gray-50 my-5" />
+
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-white shadow-sm">
+                          <span className="text-[10px] font-bold text-gray-400">AI</span>
+                        </div>
+                        <span className="text-xs font-bold text-gray-900">
+                          {suggestion.isGeneric ? "Web Suggestion" : "Resource"}
+                        </span>
+                      </div>
+                      
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="!rounded-xl font-black text-[10px] uppercase tracking-widest px-4 py-2 shadow-md shadow-blue-100 active:scale-scale-95 transition-transform"
+                        onClick={() => {
+                          if (suggestion.resourceId) {
+                            window.open(`/student/resources/${suggestion.resourceId}?view=true`, '_blank');
+                          } else if (suggestion.externalUrl) {
+                            window.open(suggestion.externalUrl, '_blank');
+                          }
+                        }}
+                      >
+                        Explore
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Resources Grid */}
+      {activeTab !== 'ai-suggestions' && (
+        <>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader size="lg" text="Loading resources..." />
+            </div>
+          ) : filteredResources.length === 0 ? (
+            <Card>
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No resources found
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {searchQuery
+                    ? 'Try adjusting your search or filters'
+                    : activeTab === 'my-uploads'
+                    ? 'You haven\'t uploaded any resources yet'
+                    : activeTab === 'history'
+                    ? 'You haven\'t downloaded any resources yet'
+                    : 'No approved resources available'}
+                </p>
+                {(activeTab === 'all' || activeTab === 'my-uploads') && (
+                  <Button onClick={() => setShowUploadModal(true)} icon={Upload}>
+                    Upload Resource
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredResources.map((resource) => (
+                <ResourceCard key={resource._id} resource={resource} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
 
       {/* Upload Modal */}
       <Modal

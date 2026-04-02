@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/common/Card';
@@ -28,6 +28,8 @@ import toast from 'react-hot-toast';
 const StudentResourceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autoView = searchParams.get('view') === 'true';
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [resource, setResource] = useState(null);
@@ -38,6 +40,12 @@ const StudentResourceDetail = () => {
   useEffect(() => {
     fetchResourceDetails();
   }, [id]);
+
+  useEffect(() => {
+    if (resource && autoView) {
+      handleView();
+    }
+  }, [resource, autoView]);
 
   const fetchResourceDetails = async (silent = false) => {
     try {
@@ -356,13 +364,66 @@ const StudentResourceDetail = () => {
               </div>
             </Card>
 
-            {/* Future Feature Area */}
-            <Card className="p-8 border-dashed border-2 border-gray-200 shadow-none rounded-xl bg-gray-50 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-full bg-gray-200/50 flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6 text-gray-400" />
+            {/* AI Recommended Resources */}
+            <Card className="p-6 border border-blue-50 shadow-sm rounded-xl bg-gradient-to-br from-white to-blue-50/20">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest tracking-tighter">AI Recommended</h3>
               </div>
-              <h3 className="text-sm font-bold text-gray-700 mb-1">AI Assistant</h3>
-              <p className="text-xs font-medium text-gray-500">To be implemented!</p>
+              
+              {loadingAI ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                  <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                  <p className="text-xs font-bold text-blue-900 animate-pulse uppercase tracking-widest">AI Thinking...</p>
+                </div>
+              ) : aiSuggestions.length > 0 ? (
+                <div className="space-y-4">
+                  {aiSuggestions.slice(0, 4).filter(s => s.resourceId !== id).map((suggestion, index) => (
+                    <div 
+                      key={index} 
+                      onClick={() => suggestion.resourceId ? window.open(`/student/resources/${suggestion.resourceId}?view=true`, '_blank') : window.open(suggestion.externalUrl, '_blank')}
+                      className="group cursor-pointer p-4 rounded-xl border border-gray-100 bg-white hover:border-blue-300 hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-1">
+                        <Badge variant="primary" className="!bg-blue-600 !text-white text-[8px] px-1.5 py-0.5 rounded-md font-black">
+                          {suggestion.relevance}%
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex gap-3 items-start">
+                        <div className="mt-1 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          {suggestion.isGeneric ? (
+                            <Globe className="w-4 h-4" />
+                          ) : (
+                            <FileText className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {suggestion.title}
+                          </p>
+                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter shrink-0 font-medium">
+                            {suggestion.type}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => navigate('/student/resources?tab=ai-suggestions')}
+                    className="w-full py-2.5 text-xs font-black text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all uppercase tracking-widest border border-dashed border-blue-200"
+                  >
+                    All AI Suggestions
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-10 px-4">
+                  <Sparkles className="w-8 h-8 text-gray-200 mx-auto mb-3" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">No recommendations yet</p>
+                </div>
+              )}
             </Card>
           </div>
         </div>

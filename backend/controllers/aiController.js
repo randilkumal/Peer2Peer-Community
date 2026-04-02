@@ -142,32 +142,80 @@ exports.suggestResources = async (req, res) => {
       }
     }
 
-    // Absolute fallback: always provide at least a few generic text suggestions
+    // Fallback: provide diverse generic document-based suggestions
     if (suggestions.length === 0) {
       suggestions.push(
         {
-          title: `Introduction resources for "${query}"`,
-          description: `Look for lecture notes, slides, and beginner-friendly materials that explain the basics of "${query}".`,
-          type: 'General',
+          title: `PPTX & Presentation Slides for "${query}"`,
+          description: `Download presentation slides and lecture decks covering "${query}".`,
+          type: 'Slides',
+          relevance: 95,
+          isGeneric: true,
+          icon: '📊',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' filetype:pptx')}`
+        },
+        {
+          title: `Past Papers & Exam Sets for "${query}"`,
+          description: `Review previous exam questions and marks schemes to prepare for "${query}".`,
+          type: 'Papers',
+          relevance: 92,
+          isGeneric: true,
+          icon: '📝',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' past papers')}`
+        },
+        {
+          title: `Research Papers & Academic Journals: "${query}"`,
+          description: `Access deep-dive academic insights and research findings regarding "${query}".`,
+          type: 'Research',
+          relevance: 88,
+          isGeneric: true,
+          icon: '🔬',
+          externalUrl: `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`
+        },
+        {
+          title: `Textbooks & Educational Booklets: "${query}"`,
+          description: `Consult comprehensive textbooks and reference manuals for "${query}".`,
+          type: 'Books',
+          relevance: 85,
+          isGeneric: true,
+          icon: '📖',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' textbook pdf')}`
+        },
+        {
+          title: `Short Notes & Revision Summaries: "${query}"`,
+          description: `Quick-reference notes and cheat sheets for efficient "${query}" review.`,
+          type: 'Notes',
+          relevance: 82,
+          isGeneric: true,
+          icon: '📓',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' study notes pdf')}`
+        },
+        {
+          title: `Assignments & Lab Reports: "${query}"`,
+          description: `Find sample assignments, templates, and lab reports focused on "${query}".`,
+          type: 'Assignments',
           relevance: 80,
           isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' introduction')}`
+          icon: '📎',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' assignment example')}`
         },
         {
-          title: `Practice problems for "${query}"`,
-          description: `Search for assignments, exercises, and past papers that include "${query}" to test your understanding.`,
-          type: 'Practice',
+          title: `Excel Sheets & Data Tables for "${query}"`,
+          description: `Analyze spreadsheets, datasets, and calculation tables for practical "${query}" work.`,
+          type: 'Sheets',
           relevance: 75,
           isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' practice problems')}`
+          icon: '📅',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' filetype:xlsx')}`
         },
         {
-          title: `Deep dive reading on "${query}"`,
-          description: `Find detailed articles, textbooks, or official documentation that cover "${query}" in depth.`,
-          type: 'Reading',
+          title: `Lecture Handouts & PDF Guides`,
+          description: `Formal lecture material and instructional guides for "${query}".`,
+          type: 'Handouts',
           relevance: 70,
           isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' deep dive reading')}`
+          icon: '📑',
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' lecture notes pdf')}`
         }
       );
     }
@@ -176,12 +224,12 @@ exports.suggestResources = async (req, res) => {
     // pad with additional generic ideas so the UI has enough options.
     while (suggestions.length < 10) {
       suggestions.push({
-        title: `More study ideas for "${query}"`,
-        description: 'Look for extra notes, solved examples, and discussion videos.',
+        title: `Academic Resources for "${query}"`,
+        description: 'Explore additional papers, notes, and study guides from peers.',
         type: 'General',
         relevance: 60 - suggestions.length, // just to vary slightly
         isGeneric: true,
-        externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query)}`
+        externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' study material')}`
       });
     }
 
