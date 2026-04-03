@@ -87,10 +87,74 @@ const StudentSessions = () => {
     }
   }, [activeTab]);
 
-  // AI Suggestions feature (Coming Soon)
-  // Logic removed as per request to keep it a placeholder/to-be-implemented part
+  // Load YouTube video suggestions when on AI tab and user types a query
+  useEffect(() => {
+    const load = async () => {
+      if (activeTab !== 'ai-recommendations') {
+        setVideoSuggestions([]);
+        setLoadingVideos(false);
+        return;
+      }
+      if (!searchQuery || searchQuery.trim().length < 3) {
+        setVideoSuggestions([]);
+        setLoadingVideos(false);
+        return;
+      }
+      try {
+        setLoadingVideos(true);
+        const trimmed = searchQuery.trim();
+        const res = await API.get(`/ai/suggest-session-videos?query=${encodeURIComponent(trimmed)}`);
+        const serverSuggestions = Array.isArray(res.data?.suggestions) ? res.data.suggestions : [];
 
+        // Fallback: build simple YouTube search links on the client so the tab is never empty.
+        const fallbackBase = 'https://www.youtube.com/results?search_query=';
+        const enc = (q) => encodeURIComponent(q);
+        const fallbackSuggestions = [
+          {
+            title: `YouTube search for "${trimmed}"`,
+            description: `Open YouTube results for "${trimmed}".`,
+            type: 'Search',
+            videoUrl: `${fallbackBase}${enc(trimmed)}`,
+            platform: 'YouTube'
+          },
+          {
+            title: `Tutorial videos: ${trimmed}`,
+            description: 'Find hands‑on tutorials and walkthroughs.',
+            type: 'Tutorial',
+            videoUrl: `${fallbackBase}${enc(trimmed + ' tutorial')}`,
+            platform: 'YouTube'
+          }
+        ];
 
+        setVideoSuggestions(serverSuggestions.length > 0 ? serverSuggestions : fallbackSuggestions);
+      } catch (e) {
+        console.error('❌ Session video suggestions failed:', e);
+        const trimmed = searchQuery.trim();
+        const base = 'https://www.youtube.com/results?search_query=';
+        const enc = (q) => encodeURIComponent(q);
+        setVideoSuggestions([
+          {
+            title: `YouTube search for "${trimmed}"`,
+            description: `Open YouTube results for "${trimmed}".`,
+            type: 'Search',
+            videoUrl: `${base}${enc(trimmed)}`,
+            platform: 'YouTube'
+          },
+          {
+            title: `Tutorial videos: ${trimmed}`,
+            description: 'Find hands‑on tutorials and walkthroughs.',
+            type: 'Tutorial',
+            videoUrl: `${base}${enc(trimmed + ' tutorial')}`,
+            platform: 'YouTube'
+          }
+        ]);
+      } finally {
+        setLoadingVideos(false);
+      }
+    };
+
+    load();
+  }, [activeTab, searchQuery]);
   const loadEnrolledModules = async () => {
     try {
       // Preferred: use student's enrolledModules codes
@@ -509,7 +573,7 @@ const StudentSessions = () => {
     { id: 'completed', label: 'Completed', icon: CheckCircle, count: sessions.completed.length },
     { id: 'cancelled', label: 'Cancelled', icon: XCircle, count: sessions.cancelled.length },
     { id: 'requested', label: 'Request History', icon: History, count: mySessionRequests.length },
-    { id: 'ai-recommendations', label: 'AI Suggestions', icon: Sparkles, count: sessions.aiRecommendations.length },
+    { id: 'ai-recommendations', label: 'AI Suggestions', icon: Sparkles, count: videoSuggestions.length },
   ];
 
   if (!user) {
@@ -583,7 +647,7 @@ const StudentSessions = () => {
                 <span className="inline-flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`} />
                   {tab.label}
-                  {tab.count > 0 && (
+                  {tab.count !== null && tab.count > 0 && (
                     <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === tab.id
                       ? 'bg-primary-100 text-primary-800'
                       : 'bg-gray-100 text-gray-700'
@@ -599,21 +663,122 @@ const StudentSessions = () => {
 
         {/* Content */}
         {activeTab === 'ai-recommendations' ? (
-          <div>
-            <Card className="mb-6">
-              <div className="py-12 px-4 text-center">
-                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="w-10 h-10 text-purple-600" />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="mb-6 overflow-hidden border-purple-100 shadow-sm">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100 p-6">
+                <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+                  <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center p-3">
+                    <Sparkles className="w-full h-full text-purple-600 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">
+                      AI Session Video Suggestions
+                    </h3>
+                    <p className="text-gray-600 max-w-2xl">
+                      {searchQuery
+                        ? `Leveraging AI to find the best YouTube resources for "${searchQuery}".`
+                        : 'Discover external learning resources tailored to your upcoming sessions and modules.'}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  AI Session Video Suggestions
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto mb-8">
-                  To be developed</p>
-                {/* <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                  <Clock className="w-4 h-4" />
-                  Coming Soon
-                </div> */}
+              </div>
+
+              <div className="p-6">
+                {!searchQuery ? (
+                  <div className="py-12 text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-200">
+                      <Search className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Ready to explore?</h4>
+                    <p className="text-gray-500 mb-6">
+                      Type a module code, topic, or concept in the search bar above to get personalized video suggestions.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                       {['React basics', 'Data Structures', 'Python for AI'].map(tag => (
+                         <button 
+                           key={tag}
+                           onClick={() => setSearchQuery(tag)}
+                           className="px-3 py-1.5 bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 rounded-full text-xs font-medium transition-colors border border-transparent hover:border-primary-100"
+                         >
+                           {tag}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+                ) : loadingVideos ? (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <div className="relative">
+                      <div className="w-16 h-16 border-4 border-purple-100 border-t-purple-600 rounded-full animate-spin"></div>
+                      <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-purple-400" />
+                    </div>
+                    <p className="mt-4 text-purple-900 font-medium animate-pulse">Scanning learning resources...</p>
+                    <p className="text-gray-500 text-sm">Finding the most relevant YouTube videos for you</p>
+                  </div>
+                ) : videoSuggestions.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {videoSuggestions.map((v, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => window.open(v.videoUrl, '_blank')}
+                        className="group flex flex-col h-full text-left bg-white border border-gray-200 rounded-xl p-5 hover:border-purple-300 hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                      >
+                        {/* Status bar */}
+                        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        
+                        <div className="flex items-start justify-between mb-3">
+                          <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                            v.type === 'Playlist' ? 'bg-indigo-50 text-indigo-600' :
+                            v.type === 'Concept' ? 'bg-emerald-50 text-emerald-600' :
+                            v.type === 'Tutorial' ? 'bg-amber-50 text-amber-600' :
+                            'bg-purple-50 text-purple-600'
+                          }`}>
+                            {v.type || 'Video'}
+                          </div>
+                          {typeof v.relevance === 'number' && (
+                            <div className="flex items-center gap-1.5" title={`${v.relevance}% AI Relevance Match`}>
+                               <span className="text-[10px] font-semibold text-gray-400">Match score:</span>
+                               <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                 <div className="h-full bg-purple-500 rounded-full" style={{ width: `${v.relevance}%` }}></div>
+                               </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <h4 className="font-bold text-gray-900 mb-2 leading-snug group-hover:text-purple-700 transition-colors">
+                          {v.title}
+                        </h4>
+                        
+                        {v.description && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                            {v.description}
+                          </p>
+                        )}
+                        
+                        <div className="mt-auto flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[11px] font-medium text-gray-500">
+                            <div className="w-5 h-5 bg-red-50 rounded-full flex items-center justify-center p-1">
+                               <Video className="w-full h-full text-red-600" />
+                            </div>
+                            <span>{v.platform || 'YouTube'}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-purple-600 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                            Watch Now <span className="text-lg">→</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 border-t border-gray-100 mt-4 text-center">
+                    <p className="text-sm text-gray-500">
+                      No YouTube suggestions found for <span className="font-semibold text-gray-900">"{searchQuery}"</span>.
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Try changing the topic, using different keywords, or searching for a module code like "CS101".
+                    </p>
+                  </div>
+                )}
               </div>
             </Card>
           </div>

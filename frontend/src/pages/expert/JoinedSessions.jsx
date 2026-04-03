@@ -352,6 +352,16 @@ const ExpertJoinedSessions = () => {
             )}
           </div>
         )}
+      {activeTab === 'ai-recommendations' && session.recommendationReason && (
+        <div className="mt-3 pt-3 border-t border-gray-200 bg-purple-50 -mx-6 -mb-6 px-6 py-3 rounded-b-lg">
+          <div className="flex items-start gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600 mt-0.5" />
+            <p className="text-sm text-purple-900">
+              <strong>Recommendation:</strong> {session.recommendationReason}
+            </p>
+          </div>
+        </div>
+      )}
     </Card>
   );
 
@@ -372,8 +382,7 @@ const ExpertJoinedSessions = () => {
       id: "completed",
       label: "Completed",
       icon: CheckCircle,
-      count:
-        sessions.completedJoined.length + sessions.completedConducted.length,
+      count: (sessions.completedJoined?.length || 0) + (sessions.completedConducted?.length || 0),
     },
     {
       id: "cancelled",
@@ -454,15 +463,17 @@ const ExpertJoinedSessions = () => {
                 >
                   <Icon className="w-5 h-5" />
                   <span>{tab.label}</span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? "bg-primary-100 text-primary-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
+                  {tab.count !== null && tab.count > 0 && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        activeTab === tab.id
+                          ? "bg-primary-100 text-primary-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -485,6 +496,22 @@ const ExpertJoinedSessions = () => {
             </div>
           )}
         </div>
+
+        {activeTab === "ai-recommendations" && (
+          <Card className="mb-8 border-purple-100 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-sm overflow-hidden">
+            <div className="p-6 flex flex-col md:flex-row items-center gap-4">
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center p-2.5">
+                <Sparkles className="w-full h-full text-purple-600 animate-pulse" />
+              </div>
+              <div className="text-center md:text-left">
+                <h3 className="text-lg font-bold text-gray-900">Expert AI Recommendations</h3>
+                <p className="text-sm text-gray-600">
+                  Tailored session opportunities based on your expertise and enrolled modules.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">

@@ -7,16 +7,19 @@ const {
   suggestSessionVideos
 } = require('../controllers/aiController');
 
-// All AI routes are protected
-router.use(protect);
+// @route   GET /api/ai/suggest-resources
+// @desc    Get AI resource suggestions
+// @access  Private
+router.get('/suggest-resources', protect, suggestResources);
 
-// GET /api/ai/suggest-resources?query=...
-router.get('/suggest-resources', suggestResources);
+// @route   GET /api/ai/recommend-sessions
+// @desc    Get AI session recommendations (internal sessions)
+// @access  Private
+router.get('/recommend-sessions', protect, recommendSessions);
 
-// GET /api/ai/recommend-sessions
-router.get('/recommend-sessions', recommendSessions);
-
-// GET /api/ai/suggest-session-videos?query=...
-router.get('/suggest-session-videos', suggestSessionVideos);
+// @route   GET /api/ai/suggest-session-videos
+// @desc    Get YouTube‑only session video suggestions based on a query
+// @access  Private
+router.get('/suggest-session-videos', protect, suggestSessionVideos);
 
 module.exports = router;

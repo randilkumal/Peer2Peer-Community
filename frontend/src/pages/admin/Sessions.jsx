@@ -175,7 +175,7 @@ const AdminSessions = () => {
   const filteredSessions = useMemo(() => {
     let list = sessions[activeTab] || [];
 
-    if (activeTab === "session-request-history" || activeTab === "completed" || activeTab === "cancelled") {
+    if (activeTab === "session-request-history") {
       return [];
     }
 
@@ -215,13 +215,13 @@ const AdminSessions = () => {
       id: "completed",
       label: "Completed",
       icon: CheckCircle,
-      count: null,
+      count: sessions.completed.length,
     },
     {
       id: "cancelled",
       label: "Cancelled",
       icon: XCircle,
-      count: null,
+      count: sessions.cancelled.length,
     },
     {
       id: "session-request-history",
@@ -424,8 +424,6 @@ const AdminSessions = () => {
               ))}
             </div>
           )
-        ) : (activeTab === "completed" || activeTab === "cancelled") ? (
-          <div className="py-12"></div>
         ) : filteredSessions.length === 0 ? (
           <Card>
             <div className="py-12 text-center">

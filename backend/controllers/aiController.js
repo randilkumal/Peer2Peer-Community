@@ -7,8 +7,9 @@ const User = require('../models/User');
 // @access  Private
 exports.suggestResources = async (req, res) => {
   try {
+    console.log('=== AI SUGGEST RESOURCES DEBUG ===');
     const { query } = req.query;
-
+    
     if (!query || query.trim().length < 2) {
       return res.json({
         success: true,
@@ -16,9 +17,11 @@ exports.suggestResources = async (req, res) => {
       });
     }
 
+    console.log('Search query:', query);
+
     // Search for approved resources matching the query
     const searchRegex = new RegExp(query.split(' ').join('|'), 'i');
-
+    
     const matchingResources = await Resource.find({
       status: 'approved',
       $or: [
@@ -28,9 +31,11 @@ exports.suggestResources = async (req, res) => {
         { type: { $regex: searchRegex } }
       ]
     })
-      .populate('uploadedBy', 'name fullName')
-      .limit(20) // allow more matches to build suggestions
-      .sort({ downloads: -1, averageRating: -1, createdAt: -1 });
+    .populate('uploadedBy', 'name fullName')
+    .limit(20) // allow more matches to build suggestions
+    .sort({ downloads: -1, averageRating: -1, createdAt: -1 });
+
+    console.log(`Found ${matchingResources.length} matching resources`);
 
     // Generate suggestions with relevance scores
     const suggestions = matchingResources.map(resource => {
@@ -39,21 +44,21 @@ exports.suggestResources = async (req, res) => {
       const lowerQuery = query.toLowerCase();
       const lowerTitle = resource.title.toLowerCase();
       const lowerDesc = (resource.description || '').toLowerCase();
-
+      
       if (lowerTitle.includes(lowerQuery)) {
         relevance += 30;
       } else if (lowerTitle.split(' ').some(word => lowerQuery.includes(word) || word.includes(lowerQuery))) {
         relevance += 20;
       }
-
+      
       if (lowerDesc.includes(lowerQuery)) {
         relevance += 10;
       }
-
+      
       if (resource.moduleCode.toLowerCase().includes(lowerQuery)) {
         relevance += 15;
       }
-
+      
       if (resource.averageRating > 4) {
         relevance += 5;
       }
@@ -62,7 +67,7 @@ exports.suggestResources = async (req, res) => {
       } else if (resource.downloads > 10) {
         relevance += 3;
       }
-
+      
       relevance = Math.min(relevance, 100);
 
       const googleQuery = encodeURIComponent(`${resource.title} ${resource.moduleCode || ''}`.trim());
@@ -88,7 +93,7 @@ exports.suggestResources = async (req, res) => {
     // Add generic suggestions if we have few results
     if (suggestions.length < 5) {
       const keywords = query.toLowerCase().split(' ');
-
+      
       if (keywords.some(k => ['exam', 'test', 'quiz', 'paper', 'past'].includes(k))) {
         const q = encodeURIComponent(`past papers ${query}`);
         suggestions.push({
@@ -142,94 +147,48 @@ exports.suggestResources = async (req, res) => {
       }
     }
 
-    // Fallback: provide diverse generic document-based suggestions
+    // Absolute fallback: always provide at least a few generic text suggestions
     if (suggestions.length === 0) {
       suggestions.push(
         {
-          title: `PPTX & Presentation Slides for "${query}"`,
-          description: `Download presentation slides and lecture decks covering "${query}".`,
-          type: 'Slides',
-          relevance: 95,
-          isGeneric: true,
-          icon: '📊',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' filetype:pptx')}`
-        },
-        {
-          title: `Past Papers & Exam Sets for "${query}"`,
-          description: `Review previous exam questions and marks schemes to prepare for "${query}".`,
-          type: 'Papers',
-          relevance: 92,
-          isGeneric: true,
-          icon: '📝',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' past papers')}`
-        },
-        {
-          title: `Research Papers & Academic Journals: "${query}"`,
-          description: `Access deep-dive academic insights and research findings regarding "${query}".`,
-          type: 'Research',
-          relevance: 88,
-          isGeneric: true,
-          icon: '🔬',
-          externalUrl: `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`
-        },
-        {
-          title: `Textbooks & Educational Booklets: "${query}"`,
-          description: `Consult comprehensive textbooks and reference manuals for "${query}".`,
-          type: 'Books',
-          relevance: 85,
-          isGeneric: true,
-          icon: '📖',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' textbook pdf')}`
-        },
-        {
-          title: `Short Notes & Revision Summaries: "${query}"`,
-          description: `Quick-reference notes and cheat sheets for efficient "${query}" review.`,
-          type: 'Notes',
-          relevance: 82,
-          isGeneric: true,
-          icon: '📓',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' study notes pdf')}`
-        },
-        {
-          title: `Assignments & Lab Reports: "${query}"`,
-          description: `Find sample assignments, templates, and lab reports focused on "${query}".`,
-          type: 'Assignments',
+          title: `Introduction resources for "${query}"`,
+          description: `Look for lecture notes, slides, and beginner-friendly materials that explain the basics of "${query}".`,
+          type: 'General',
           relevance: 80,
           isGeneric: true,
-          icon: '📎',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' assignment example')}`
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' introduction')}`
         },
         {
-          title: `Excel Sheets & Data Tables for "${query}"`,
-          description: `Analyze spreadsheets, datasets, and calculation tables for practical "${query}" work.`,
-          type: 'Sheets',
+          title: `Practice problems for "${query}"`,
+          description: `Search for assignments, exercises, and past papers that include "${query}" to test your understanding.`,
+          type: 'Practice',
           relevance: 75,
           isGeneric: true,
-          icon: '📅',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' filetype:xlsx')}`
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' practice problems')}`
         },
         {
-          title: `Lecture Handouts & PDF Guides`,
-          description: `Formal lecture material and instructional guides for "${query}".`,
-          type: 'Handouts',
+          title: `Deep dive reading on "${query}"`,
+          description: `Find detailed articles, textbooks, or official documentation that cover "${query}" in depth.`,
+          type: 'Reading',
           relevance: 70,
           isGeneric: true,
-          icon: '📑',
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' lecture notes pdf')}`
+          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' deep dive reading')}`
         }
       );
     }
+
+    console.log(`Generated ${suggestions.length} suggestions`);
 
     // Ensure we always return up to 10 suggestions; if we have fewer,
     // pad with additional generic ideas so the UI has enough options.
     while (suggestions.length < 10) {
       suggestions.push({
-        title: `Academic Resources for "${query}"`,
-        description: 'Explore additional papers, notes, and study guides from peers.',
+        title: `More study ideas for "${query}"`,
+        description: 'Look for extra notes, solved examples, and discussion videos.',
         type: 'General',
         relevance: 60 - suggestions.length, // just to vary slightly
         isGeneric: true,
-        externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' study material')}`
+        externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query)}`
       });
     }
 
@@ -239,6 +198,7 @@ exports.suggestResources = async (req, res) => {
       suggestions: suggestions.slice(0, 10) // return up to 10 suggestions
     });
   } catch (error) {
+    console.error('AI suggestions error:', error);
     res.status(500).json({
       success: false,
       message: 'Error generating suggestions',
@@ -257,9 +217,9 @@ exports.recommendSessions = async (req, res) => {
     // Get user's enrolled modules for personalization
     const user = await User.findById(userId).select('enrolledModules expertiseModules masteredModules');
     const userModules = [
-      ...(user?.enrolledModules || []),
-      ...(user?.expertiseModules || []),
-      ...(user?.masteredModules || [])
+      ...((user && user.enrolledModules) || []),
+      ...((user && user.expertiseModules) || []),
+      ...((user && user.masteredModules) || [])
     ].filter(Boolean);
 
     // Fetch real session announcements (status requested) - same as Announcements tab
@@ -312,6 +272,7 @@ exports.recommendSessions = async (req, res) => {
       sessions: enriched.slice(0, 10)
     });
   } catch (error) {
+    console.error('recommendSessions error:', error);
     res.status(500).json({
       success: false,
       message: 'Error generating recommendations',
@@ -427,6 +388,7 @@ exports.suggestSessionVideos = async (req, res) => {
       suggestions
     });
   } catch (error) {
+    console.error('suggestSessionVideos error:', error);
     res.status(500).json({
       success: false,
       message: 'Error generating YouTube session suggestions',
