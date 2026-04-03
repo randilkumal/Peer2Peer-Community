@@ -10,6 +10,7 @@ import Login from './pages/auth/Login'
 import Dashboard from './pages/student/Dashboard'
 import Resources from './pages/student/Resources'
 import StudentResourceDetail from './pages/student/ResourceDetail'
+import Chat from './pages/student/Chat'
 
 // Placeholder pages (to be implemented)
 import Groups from './pages/student/Groups'
@@ -112,7 +113,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ToBeImplemented />} />
             <Route path="/settings" element={<ToBeImplemented />} />
-            <Route path="/chat" element={<ToBeImplemented />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/feed" element={<ToBeImplemented />} />
             <Route path="/users" element={<ProtectedRoute allowedRoles={['admin']}><ToBeImplemented /></ProtectedRoute>} />
             <Route path="/expert-queue" element={<ProtectedRoute allowedRoles={['admin']}><ToBeImplemented /></ProtectedRoute>} />

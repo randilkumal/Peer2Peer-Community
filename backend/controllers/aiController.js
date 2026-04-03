@@ -7,7 +7,6 @@ const User = require('../models/User');
 // @access  Private
 exports.suggestResources = async (req, res) => {
   try {
-    console.log('=== AI SUGGEST RESOURCES DEBUG ===');
     const { query } = req.query;
     
     if (!query || query.trim().length < 2) {
@@ -17,176 +16,114 @@ exports.suggestResources = async (req, res) => {
       });
     }
 
-    console.log('Search query:', query);
-
-    // Search for approved resources matching the query
-    const searchRegex = new RegExp(query.split(' ').join('|'), 'i');
+    const suggestions = [];
+    const keywords = query.toLowerCase().split(' ');
+    const qRaw = encodeURIComponent(query);
     
-    const matchingResources = await Resource.find({
-      status: 'approved',
-      $or: [
-        { title: { $regex: searchRegex } },
-        { description: { $regex: searchRegex } },
-        { moduleCode: { $regex: searchRegex } },
-        { type: { $regex: searchRegex } }
-      ]
-    })
-    .populate('uploadedBy', 'name fullName')
-    .limit(20) // allow more matches to build suggestions
-    .sort({ downloads: -1, averageRating: -1, createdAt: -1 });
-
-    console.log(`Found ${matchingResources.length} matching resources`);
-
-    // Generate suggestions with relevance scores
-    const suggestions = matchingResources.map(resource => {
-      // Calculate relevance score
-      let relevance = 50;
-      const lowerQuery = query.toLowerCase();
-      const lowerTitle = resource.title.toLowerCase();
-      const lowerDesc = (resource.description || '').toLowerCase();
-      
-      if (lowerTitle.includes(lowerQuery)) {
-        relevance += 30;
-      } else if (lowerTitle.split(' ').some(word => lowerQuery.includes(word) || word.includes(lowerQuery))) {
-        relevance += 20;
+    // Always provide diverse generic document-based suggestions
+    suggestions.push(
+      {
+        title: `PPTX & Presentation Slides for "${query}"`,
+        description: `Download presentation slides and lecture decks covering "${query}".`,
+        type: 'Slides',
+        relevance: 98,
+        isGeneric: true,
+        icon: '📊',
+        externalUrl: `https://www.google.com/search?q=${qRaw}+filetype:pptx`
+      },
+      {
+        title: `Past Papers & Exam Sets for "${query}"`,
+        description: `Review previous exam questions and marks schemes to prepare for "${query}".`,
+        type: 'Papers',
+        relevance: 95,
+        isGeneric: true,
+        icon: '📝',
+        externalUrl: `https://www.google.com/search?q=${qRaw}+past+papers`
+      },
+      {
+        title: `Research Papers & Academic Journals: "${query}"`,
+        description: `Access deep-dive academic insights and research findings regarding "${query}".`,
+        type: 'Research',
+        relevance: 92,
+        isGeneric: true,
+        icon: '🔬',
+        externalUrl: `https://scholar.google.com/scholar?q=${qRaw}`
       }
-      
-      if (lowerDesc.includes(lowerQuery)) {
-        relevance += 10;
-      }
-      
-      if (resource.moduleCode.toLowerCase().includes(lowerQuery)) {
-        relevance += 15;
-      }
-      
-      if (resource.averageRating > 4) {
-        relevance += 5;
-      }
-      if (resource.downloads > 20) {
-        relevance += 5;
-      } else if (resource.downloads > 10) {
-        relevance += 3;
-      }
-      
-      relevance = Math.min(relevance, 100);
+    );
 
-      const googleQuery = encodeURIComponent(`${resource.title} ${resource.moduleCode || ''}`.trim());
-
-      return {
-        title: resource.title,
-        description: resource.description || `${resource.type} for ${resource.moduleCode}`,
-        type: resource.type,
-        moduleCode: resource.moduleCode,
-        relevance: relevance,
-        resourceId: resource._id,
-        downloads: resource.downloads,
-        rating: resource.averageRating,
-        uploader: resource.uploadedBy?.fullName || resource.uploadedBy?.name,
-        isGeneric: false,
-        externalUrl: `https://www.google.com/search?q=${googleQuery}`
-      };
-    });
-
-    // Sort by relevance
-    suggestions.sort((a, b) => b.relevance - a.relevance);
-
-    // Add generic suggestions if we have few results
-    if (suggestions.length < 5) {
-      const keywords = query.toLowerCase().split(' ');
-      
-      if (keywords.some(k => ['exam', 'test', 'quiz', 'paper', 'past'].includes(k))) {
-        const q = encodeURIComponent(`past papers ${query}`);
-        suggestions.push({
-          title: `Past Papers and Exam Resources for ${query}`,
-          description: 'Find past examination papers and test preparation materials',
-          type: 'Past Papers',
-          relevance: 85,
-          isGeneric: true,
-          icon: '📝',
-          externalUrl: `https://www.google.com/search?q=${q}`
-        });
-      }
-
-      if (keywords.some(k => ['lecture', 'notes', 'slides', 'handout'].includes(k))) {
-        const q = encodeURIComponent(`lecture notes ${query}`);
-        suggestions.push({
-          title: `Lecture Notes and Study Materials for ${query}`,
-          description: 'Comprehensive lecture notes and study guides',
-          type: 'Lecture Notes',
-          relevance: 80,
-          isGeneric: true,
-          icon: '📚',
-          externalUrl: `https://www.google.com/search?q=${q}`
-        });
-      }
-
-      if (keywords.some(k => ['assignment', 'homework', 'project', 'coursework'].includes(k))) {
-        const q = encodeURIComponent(`assignments ${query}`);
-        suggestions.push({
-          title: `Assignment Help for ${query}`,
-          description: 'Guidelines, rubrics, and sample assignments',
-          type: 'Assignments',
-          relevance: 75,
-          isGeneric: true,
-          icon: '✍️',
-          externalUrl: `https://www.google.com/search?q=${q}`
-        });
-      }
-
-      if (keywords.some(k => ['textbook', 'book', 'reference', 'reading'].includes(k))) {
-        const q = encodeURIComponent(`textbooks ${query}`);
-        suggestions.push({
-          title: `Recommended Textbooks for ${query}`,
-          description: 'Essential reading materials and textbooks',
-          type: 'Textbooks',
-          relevance: 70,
-          isGeneric: true,
-          icon: '📖',
-          externalUrl: `https://www.google.com/search?q=${q}`
-        });
-      }
+    if (keywords.some(k => ['lecture', 'notes', 'slides', 'handout'].includes(k))) {
+      suggestions.push({
+        title: `Lecture Notes and Study Materials for ${query}`,
+        description: 'Comprehensive lecture notes and study guides discovered by AI.',
+        type: 'Lecture Notes',
+        relevance: 88,
+        isGeneric: true,
+        icon: '📚',
+        externalUrl: `https://www.google.com/search?q=${encodeURIComponent('lecture notes ' + query)}`
+      });
     }
 
-    // Absolute fallback: always provide at least a few generic text suggestions
-    if (suggestions.length === 0) {
-      suggestions.push(
-        {
-          title: `Introduction resources for "${query}"`,
-          description: `Look for lecture notes, slides, and beginner-friendly materials that explain the basics of "${query}".`,
-          type: 'General',
-          relevance: 80,
-          isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' introduction')}`
-        },
-        {
-          title: `Practice problems for "${query}"`,
-          description: `Search for assignments, exercises, and past papers that include "${query}" to test your understanding.`,
-          type: 'Practice',
-          relevance: 75,
-          isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' practice problems')}`
-        },
-        {
-          title: `Deep dive reading on "${query}"`,
-          description: `Find detailed articles, textbooks, or official documentation that cover "${query}" in depth.`,
-          type: 'Reading',
-          relevance: 70,
-          isGeneric: true,
-          externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query + ' deep dive reading')}`
-        }
-      );
+    if (keywords.some(k => ['assignment', 'homework', 'project', 'coursework'].includes(k))) {
+      suggestions.push({
+        title: `Assignment Help for ${query}`,
+        description: 'Guidelines, rubrics, and sample assignments from external academic sources.',
+        type: 'Assignments',
+        relevance: 85,
+        isGeneric: true,
+        icon: '✍️',
+        externalUrl: `https://www.google.com/search?q=${encodeURIComponent('assignments ' + query)}`
+      });
     }
 
-    console.log(`Generated ${suggestions.length} suggestions`);
+    if (keywords.some(k => ['textbook', 'book', 'reference', 'reading'].includes(k))) {
+      suggestions.push({
+        title: `Recommended Textbooks for ${query}`,
+        description: 'Essential reading materials and textbooks found externally.',
+        type: 'Textbooks',
+        relevance: 82,
+        isGeneric: true,
+        icon: '📖',
+        externalUrl: `https://www.google.com/search?q=${encodeURIComponent('textbooks ' + query)}`
+      });
+    }
 
-    // Ensure we always return up to 10 suggestions; if we have fewer,
-    // pad with additional generic ideas so the UI has enough options.
-    while (suggestions.length < 10) {
+    suggestions.push(
+      {
+        title: `Textbooks & Educational Booklets: "${query}"`,
+        description: `Consult comprehensive textbooks and reference manuals for "${query}".`,
+        type: 'Books',
+        relevance: 80,
+        isGeneric: true,
+        icon: '📖',
+        externalUrl: `https://www.google.com/search?q=${qRaw}+textbook+pdf`
+      },
+      {
+        title: `Excel Sheets & Data Tables for "${query}"`,
+        description: `Analyze spreadsheets, datasets, and calculation tables for practical "${query}" work.`,
+        type: 'Sheets',
+        relevance: 75,
+        isGeneric: true,
+        icon: '📅',
+        externalUrl: `https://www.google.com/search?q=${qRaw}+filetype:xlsx`
+      },
+      {
+        title: `Lecture Handouts & PDF Guides`,
+        description: `Formal lecture material and instructional guides for "${query}".`,
+        type: 'Handouts',
+        relevance: 70,
+        isGeneric: true,
+        icon: '📑',
+        externalUrl: `https://www.google.com/search?q=${qRaw}+lecture+notes+pdf`
+      }
+    );
+
+    // Padding for UI consistency
+    while (suggestions.length < 8) {
       suggestions.push({
         title: `More study ideas for "${query}"`,
         description: 'Look for extra notes, solved examples, and discussion videos.',
         type: 'General',
-        relevance: 60 - suggestions.length, // just to vary slightly
+        relevance: 60 - suggestions.length,
         isGeneric: true,
         externalUrl: `https://www.google.com/search?q=${encodeURIComponent(query)}`
       });
@@ -195,7 +132,7 @@ exports.suggestResources = async (req, res) => {
     res.json({
       success: true,
       query,
-      suggestions: suggestions.slice(0, 10) // return up to 10 suggestions
+      suggestions: suggestions.slice(0, 10)
     });
   } catch (error) {
     console.error('AI suggestions error:', error);
@@ -392,6 +329,167 @@ exports.suggestSessionVideos = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error generating YouTube session suggestions',
+      error: error.message
+    });
+  }
+};
+
+const Groq = require('groq-sdk');
+const pdf = require('pdf-parse');
+const fs = require('fs');
+const path = require('path');
+
+
+/**
+ * @desc    Generate a quiz based on an uploaded document (PDF, Slides, etc)
+ * @route   POST /api/ai/generate-quiz
+ * @access  Private
+ */
+exports.generateQuiz = async (req, res) => {
+  try {
+    console.log('=== AI GENERATE QUIZ START ===');
+    const { moduleCode, difficulty = 'Medium', numQuestions = 5, instructions = '' } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'File is required' });
+    }
+
+    const fileName = req.file.originalname;
+    const filePath = req.file.path;
+    const mimetype = req.file.mimetype;
+
+    // 1. Extract content
+    let documentContent = '';
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      if (mimetype === 'application/pdf') {
+        const data = await pdf(fileBuffer);
+        documentContent = data.text;
+      } else if (mimetype.includes('text') || mimetype.includes('json')) {
+        documentContent = fileBuffer.toString('utf-8');
+      } else {
+        documentContent = `Topic: ${fileName}. Content extraction limited for this format.`;
+      }
+    } catch (err) {
+      console.warn('Extraction skipped:', err.message);
+      documentContent = `Topic: ${fileName}. Proceeding with general knowledge generation.`;
+    }
+
+    const cleanedContent = (documentContent || '').slice(0, 4000).replace(/\s+/g, ' ');
+
+    // 2. AI Generation or Fallback
+    const count = parseInt(numQuestions) || 5;
+    let quizData = null;
+
+    try {
+      if (!process.env.GROQ_API_KEY) throw new Error('API Key Missing');
+      
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const promptText = `Generate a ${difficulty} difficulty quiz with ${count} multiple-choice questions.
+
+CONSTRAINTS & IMPORTANT RULES:
+1. Base questions ONLY on the attached document content. Focus entirely on the extracted text provided. Do not hallucinate or add external knowledge.
+2. Each question must have EXACTLY 4 answer choices (A, B, C, D).
+3. Mark the correct answer clearly.
+4. Each question MUST be UNIQUE. Cover different topics, sections, or ideas.
+
+Difficulty Guidelines used for distractors:
+- Easy: Basic recall questions, obvious distractors.
+- Medium: Application/understanding questions, plausible distractors.
+- Hard: Analysis/synthesis questions, very similar distractors. Require critical thinking. Include "all of the above" or "none of the above" options occasionally.
+
+Context / Uploaded Text: ${cleanedContent ? cleanedContent : `(ERROR: No text extracted. Focus on filename: ${fileName})`}
+
+Output format (strict JSON):
+{
+  "questions": [
+    {
+      "text": "question here",
+      "options": ["A) option1", "B) option2", "C) option3", "D) option4"],
+      "correct_answer": "A",
+      "explanation": "brief explanation why this is correct"
+    }
+  ]
+}`;
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: 'system', content: `You are an academic quiz generator. You return ONLY valid JSON. Focus on creativity (SEED: ${Date.now()}-${Math.random()}).` },
+          { role: 'user', content: promptText }
+        ],
+        model: 'llama-3.1-8b-instant',
+        temperature: 0.4,
+        response_format: { type: 'json_object' }
+      });
+
+      let rawContent = completion.choices[0]?.message?.content || '{}';
+      
+      // Clean up potential markdown formatting from the AI before parsing
+      rawContent = rawContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+      
+      const jsonStart = rawContent.indexOf('{');
+      const jsonEnd = rawContent.lastIndexOf('}') + 1;
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        rawContent = rawContent.slice(jsonStart, jsonEnd);
+      }
+      
+      quizData = JSON.parse(rawContent);
+      
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+        throw new Error("AI returned empty or invalid question structure.");
+      }
+      
+      // Map strict JSON format to frontend expected format
+      quizData.questions = quizData.questions.map((q, idx) => {
+         let ansIndex = 0;
+         if (typeof q.correct_answer === 'string') {
+            const letter = q.correct_answer.replace(/[^a-zA-Z]/g, '').charAt(0).toUpperCase();
+            ansIndex = letter.charCodeAt(0) - 65; // 'A' -> 0, 'B' -> 1
+            if (ansIndex < 0 || ansIndex > 4) ansIndex = 0;
+         } else if (typeof q.correct_answer === 'number') {
+            ansIndex = q.correct_answer;
+         }
+         return {
+            id: q.id || idx + 1,
+            question: q.text || q.question,
+            options: q.options,
+            answer: ansIndex,
+            explanation: q.explanation
+         };
+      });
+      
+      // Shuffle the questions array so it's guaranteed to be in a different order
+      quizData.questions = quizData.questions.sort(() => Math.random() - 0.5);
+
+    } catch (aiError) {
+      console.error('AI Call or Parsing failed:', aiError.message);
+      return res.status(500).json({
+        success: false,
+        message: `AI Generation Error. Did you add your GROQ_API_KEY? Detail: ${aiError.message}`
+      });
+    }
+
+    // 3. Final Response
+    res.json({
+      success: true,
+      quiz: {
+        title: quizData.title || `Self-Assessment: ${fileName}`,
+        moduleCode: moduleCode || 'General Knowledge',
+        difficulty,
+        questionCount: quizData.questions.length,
+        questions: quizData.questions.map((q, idx) => ({
+          ...q,
+          id: q.id || idx + 1
+        })),
+        sourceFile: fileName
+      }
+    });
+
+  } catch (error) {
+    console.error('CRITICAL QUIZ ERROR:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initiate quiz generation system.',
       error: error.message
     });
   }

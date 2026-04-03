@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
+import FileViewer from '../../components/common/FileViewer';
 import API from '../../utils/api';
 import { 
   FileText, 
@@ -20,7 +21,9 @@ import {
   Sparkles,
   BookOpen,
   GraduationCap,
-  ExternalLink
+  ExternalLink,
+  Eye,
+  Globe
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -36,6 +39,15 @@ const StudentResourceDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
+
+  // Viewer state
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    fileUrl: '',
+    fileName: '',
+    fileType: '',
+    downloadUrl: ''
+  });
 
   useEffect(() => {
     fetchResourceDetails();
@@ -90,6 +102,17 @@ const StudentResourceDetail = () => {
     } catch (error) {
       toast.error('Download failed');
     }
+  };
+
+  const handleView = async () => {
+    if (!resource) return;
+    setViewerState({
+      isOpen: true,
+      fileUrl: `/resources/${id}/view`,
+      fileName: resource.fileName,
+      fileType: resource.fileType,
+      downloadUrl: `/resources/${id}/download`
+    });
   };
 
 
@@ -196,6 +219,10 @@ const StudentResourceDetail = () => {
                       <span>{resource.downloadCount || 0} downloads</span>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      <Eye className="w-4 h-4" />
+                      <span>{resource.viewCount || 0} views</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-bold text-gray-900">{resource.averageRating?.toFixed(1) || '0.0'}</span>
                       <span className="text-gray-400 text-xs mt-0.5">({reviews.length})</span>
@@ -236,6 +263,15 @@ const StudentResourceDetail = () => {
                   className="flex-1 !rounded-lg font-bold py-3.5 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-sm justify-center"
                 >
                   Download
+                </Button>
+                <Button
+                  variant="outline"
+                  icon={Eye}
+                  iconPosition="left"
+                  onClick={handleView}
+                  className="flex-1 !rounded-lg font-bold py-3.5 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all text-sm justify-center"
+                >
+                  View Content
                 </Button>
               </div>
             </Card>
@@ -363,70 +399,18 @@ const StudentResourceDetail = () => {
                 </div>
               </div>
             </Card>
-
-            {/* AI Recommended Resources */}
-            <Card className="p-6 border border-blue-50 shadow-sm rounded-xl bg-gradient-to-br from-white to-blue-50/20">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest tracking-tighter">AI Recommended</h3>
-              </div>
-              
-              {loadingAI ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-3">
-                  <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                  <p className="text-xs font-bold text-blue-900 animate-pulse uppercase tracking-widest">AI Thinking...</p>
-                </div>
-              ) : aiSuggestions.length > 0 ? (
-                <div className="space-y-4">
-                  {aiSuggestions.slice(0, 4).filter(s => s.resourceId !== id).map((suggestion, index) => (
-                    <div 
-                      key={index} 
-                      onClick={() => suggestion.resourceId ? window.open(`/student/resources/${suggestion.resourceId}?view=true`, '_blank') : window.open(suggestion.externalUrl, '_blank')}
-                      className="group cursor-pointer p-4 rounded-xl border border-gray-100 bg-white hover:border-blue-300 hover:shadow-md transition-all duration-300 relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 p-1">
-                        <Badge variant="primary" className="!bg-blue-600 !text-white text-[8px] px-1.5 py-0.5 rounded-md font-black">
-                          {suggestion.relevance}%
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex gap-3 items-start">
-                        <div className="mt-1 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          {suggestion.isGeneric ? (
-                            <Globe className="w-4 h-4" />
-                          ) : (
-                            <FileText className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
-                            {suggestion.title}
-                          </p>
-                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter shrink-0 font-medium">
-                            {suggestion.type}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <button 
-                    onClick={() => navigate('/student/resources?tab=ai-suggestions')}
-                    className="w-full py-2.5 text-xs font-black text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all uppercase tracking-widest border border-dashed border-blue-200"
-                  >
-                    All AI Suggestions
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center py-10 px-4">
-                  <Sparkles className="w-8 h-8 text-gray-200 mx-auto mb-3" />
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">No recommendations yet</p>
-                </div>
-              )}
-            </Card>
           </div>
         </div>
+
+        {/* File Viewer Modal */}
+        <FileViewer
+          isOpen={viewerState.isOpen}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          fileUrl={viewerState.fileUrl}
+          fileName={viewerState.fileName}
+          fileType={viewerState.fileType}
+          downloadUrl={viewerState.downloadUrl}
+        />
       </div>
     </DashboardLayout>
   );

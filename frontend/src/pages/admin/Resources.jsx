@@ -19,7 +19,11 @@ import {
   FileArchive,
   FileSpreadsheet,
   RefreshCw,
+  Eye,
+  Upload,
+  X,
 } from "lucide-react";
+import FileViewer from "../../components/common/FileViewer";
 import { formatDate } from "../../utils/helpers";
 import toast from "react-hot-toast";
 
@@ -31,7 +35,7 @@ const AdminResources = () => {
   const [loading, setLoading] = useState(true);
   const [resources, setResources] = useState([]);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [selectedStatus, setSelectedStatus] = useState(searchParams.get("status") || "");
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get("status") || "pending");
   const [selectedModule, setSelectedModule] = useState(searchParams.get("module") || "");
   const [modules, setModules] = useState([]);
   const [modulesLoading, setModulesLoading] = useState(false);
@@ -41,6 +45,26 @@ const AdminResources = () => {
   const [quickAction, setQuickAction] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Upload state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadForm, setUploadForm] = useState({
+    title: '',
+    moduleCode: '',
+    resourceType: 'Lecture Notes',
+    description: ''
+  });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState({});
+
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    fileUrl: "",
+    fileName: "",
+    fileType: "",
+    downloadUrl: "",
+  });
 
   const [stats, setStats] = useState({
     total: 0,
@@ -137,9 +161,80 @@ const AdminResources = () => {
     setRejectionReason("");
   };
 
+  const handleUploadChange = (e) => {
+    const { name, value } = e.target;
+    setUploadForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (uploadErrors[name]) {
+      setUploadErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('File size exceeds 50MB limit');
+        return;
+      }
+      setSelectedFile(file);
+      if (uploadErrors.file) {
+        setUploadErrors(prev => ({ ...prev, file: null }));
+      }
+    }
+  };
+
+  const handleUploadResource = async (e) => {
+    e.preventDefault();
+    const errors = {};
+    if (!uploadForm.title.trim()) errors.title = 'Title is required';
+    if (!uploadForm.moduleCode) errors.moduleCode = 'Module is required';
+    if (!selectedFile) errors.file = 'File is required';
+
+    if (Object.keys(errors).length > 0) {
+      setUploadErrors(errors);
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      const formData = new FormData();
+      formData.append('title', uploadForm.title);
+      formData.append('moduleCode', uploadForm.moduleCode);
+      formData.append('resourceType', uploadForm.resourceType);
+      formData.append('description', uploadForm.description);
+      formData.append('file', selectedFile);
+
+      await API.post('/resources', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      toast.success('Resource uploaded successfully');
+      setShowUploadModal(false);
+      setUploadForm({
+        title: '',
+        moduleCode: '',
+        resourceType: 'Lecture Notes',
+        description: ''
+      });
+      setSelectedFile(null);
+      fetchResources();
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload resource');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
 
-  
+
+  const handleView = (resource) => {
+    navigate(`/admin/resources/${resource._id}`);
+  };
+
   //Rejection Reason Validation
   const confirmQuickAction = async () => {
     if (!selectedResource) return;
@@ -245,14 +340,24 @@ const AdminResources = () => {
             <p className="mt-1 text-gray-600">Review and approve uploaded resources</p>
           </div>
 
-          <Button
-            variant="outline"
-            icon={RefreshCw}
-            onClick={handleRefresh}
-            disabled={loading || actionLoading}
-          >
-            Refresh
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              icon={Upload}
+              onClick={() => setShowUploadModal(true)}
+              className="!rounded-2xl bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100"
+            >
+              Upload Resource
+            </Button>
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={handleRefresh}
+              className="h-[42px] border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-95"
+              disabled={loading || actionLoading}
+            >
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
@@ -377,9 +482,6 @@ const AdminResources = () => {
                       Resource
                     </th>
                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
-                      Module
-                    </th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
                       Uploader
                     </th>
                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -429,12 +531,6 @@ const AdminResources = () => {
                       </td>
 
                       <td className="px-6 py-4">
-                        <div className="inline-flex px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-bold border border-gray-200">
-                          {resource.moduleCode}
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 border border-white shadow-sm">
                             <span className="text-sm font-black text-blue-600">
@@ -447,10 +543,8 @@ const AdminResources = () => {
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-bold tracking-wide ${typeClass}`}>
-                          {resource.resourceType || "Other"}
-                        </span>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                        {resource.resourceType || "Other"}
                       </td>
 
                       <td className="px-6 py-4 text-xs font-medium text-gray-500">
@@ -463,6 +557,15 @@ const AdminResources = () => {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleView(resource)}
+                            className="!rounded-xl text-gray-600 hover:bg-gray-50 text-xs py-1.5"
+                            disabled={actionLoading}
+                          >
+                            View
+                          </Button>
 
                           {isAdmin && resource.status === "pending" && (
                             <>
@@ -474,7 +577,7 @@ const AdminResources = () => {
                                 className="!rounded-xl border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 text-xs py-1.5"
                                 disabled={actionLoading}
                               >
-                                Approve
+                                Accept
                               </Button>
 
                               <Button
@@ -557,6 +660,155 @@ const AdminResources = () => {
           </div>
         )}
       </Modal>
+
+      {/* Upload Modal */}
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => {
+          if (!uploadLoading) setShowUploadModal(false);
+        }}
+        title="Upload New Resource"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowUploadModal(false)}
+              disabled={uploadLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUploadResource}
+              loading={uploadLoading}
+            >
+              Upload Resource
+            </Button>
+          </>
+        }
+      >
+        <form className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-gray-700">
+              Resource Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={uploadForm.title}
+              onChange={handleUploadChange}
+              placeholder="e.g., Week 4 Lecture Slides"
+              className={`w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-900 ${uploadErrors.title ? 'border-red-500' : ''}`}
+            />
+            {uploadErrors.title && <p className="text-xs text-red-500 font-bold">{uploadErrors.title}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-gray-700">
+                Module <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="moduleCode"
+                value={uploadForm.moduleCode}
+                onChange={handleUploadChange}
+                className={`w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-900 ${uploadErrors.moduleCode ? 'border-red-500' : ''}`}
+              >
+                <option value="">Select Module</option>
+                {modules.map(mod => (
+                  <option key={mod.code} value={mod.code}>{mod.code} - {mod.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-gray-700">
+                Category
+              </label>
+              <select
+                name="resourceType"
+                value={uploadForm.resourceType}
+                onChange={handleUploadChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-900"
+              >
+                <option value="Lecture Notes">Lecture Notes</option>
+                <option value="Assignments">Assignments</option>
+                <option value="Past Papers">Past Papers</option>
+                <option value="Textbooks">Textbooks</option>
+                <option value="Study Guides">Study Guides</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-gray-700">Description</label>
+            <textarea
+              name="description"
+              value={uploadForm.description}
+              onChange={handleUploadChange}
+              rows={3}
+              placeholder="Briefly explain what this resource contains..."
+              className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-900 resize-none"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-gray-700">
+              File Attachment <span className="text-red-500">*</span>
+            </label>
+            <div className={`relative group transition-all`}>
+              <input
+                type="file"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className={`p-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 transition-all ${selectedFile ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50/30'}`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${selectedFile ? 'bg-blue-500 text-white' : 'bg-white text-gray-400 group-hover:text-blue-500'}`}>
+                  {selectedFile ? <FileText className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-gray-900 leading-tight">
+                    {selectedFile ? selectedFile.name : 'Click or drag file to upload'}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    {selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB` : 'PDF, PPT, ZIP, DOCX (Max 50MB)'}
+                  </p>
+                </div>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                    className="absolute top-2 right-2 p-1.5 bg-white rounded-full text-gray-400 hover:text-red-500 shadow-sm border border-gray-100 transition-colors z-20"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {uploadErrors.file && <p className="text-xs text-red-500 font-bold">{uploadErrors.file}</p>}
+          </div>
+
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
+             <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white shrink-0">
+                <Clock className="w-4 h-4" />
+             </div>
+             <p className="text-xs font-bold text-blue-800 leading-relaxed">
+                As an admin, your uploaded resources will be automatically approved and visible to the community immediately.
+             </p>
+          </div>
+        </form>
+      </Modal>
+
+      <FileViewer
+        isOpen={viewerState.isOpen}
+        onClose={() =>
+          setViewerState((prev) => ({ ...prev, isOpen: false }))
+        }
+        fileUrl={viewerState.fileUrl}
+        fileName={viewerState.fileName}
+        fileType={viewerState.fileType}
+        downloadUrl={viewerState.downloadUrl}
+      />
     </DashboardLayout>
   );
 };

@@ -4,7 +4,8 @@ const { protect } = require('../middleware/auth');
 const {
   suggestResources,
   recommendSessions,
-  suggestSessionVideos
+  suggestSessionVideos,
+  generateQuiz
 } = require('../controllers/aiController');
 
 // @route   GET /api/ai/suggest-resources
@@ -21,5 +22,9 @@ router.get('/recommend-sessions', protect, recommendSessions);
 // @desc    Get YouTube‑only session video suggestions based on a query
 // @access  Private
 router.get('/suggest-session-videos', protect, suggestSessionVideos);
+
+// POST /api/ai/generate-quiz
+const upload = require('../middleware/upload');
+router.post('/generate-quiz', upload.single('file'), generateQuiz);
 
 module.exports = router;

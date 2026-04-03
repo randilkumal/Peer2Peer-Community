@@ -24,8 +24,11 @@ import {
   MessageSquare,
   Trash2,
   RefreshCw,
+  Eye,
+  GraduationCap
 } from "lucide-react";
-import { formatDate, formatDateTime } from "../../utils/helpers";
+import { formatDate, formatDateTime, formatFileSize } from "../../utils/helpers";
+import FileViewer from "../../components/common/FileViewer";
 import toast from "react-hot-toast";
 
 const AdminResourceDetail = () => {
@@ -50,6 +53,14 @@ const AdminResourceDetail = () => {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [ratingSubmitLoading, setRatingSubmitLoading] = useState(false);
+
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    fileUrl: "",
+    fileName: "",
+    fileType: "",
+    downloadUrl: "",
+  });
 
   useEffect(() => {
     fetchResourceDetails();
@@ -293,7 +304,8 @@ const AdminResourceDetail = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <>
+        <div className="p-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <Button
             variant="ghost"
@@ -303,12 +315,12 @@ const AdminResourceDetail = () => {
             Back to Resources
           </Button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               icon={RefreshCw}
               onClick={handleRefresh}
-              className="h-[42px] shadow-sm hover:shadow-md transition-all active:scale-95"
+              className="h-[42px] shadow-sm hover:shadow-md transition-all active:scale-95 !rounded-xl"
               disabled={actionLoading || ratingSubmitLoading}
             >
               Refresh
@@ -332,15 +344,15 @@ const AdminResourceDetail = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  icon={CheckCircle}
-                  onClick={() => setShowApproveModal(true)}
-                  className="border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
-                  disabled={actionLoading}
-                >
-                  Approve
-                </Button>
+                  <Button
+                    variant="outline"
+                    icon={CheckCircle}
+                    onClick={() => setShowApproveModal(true)}
+                    className="border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                    disabled={actionLoading}
+                  >
+                    Accept
+                  </Button>
                 <Button
                   icon={XCircle}
                   variant="outline"
@@ -466,66 +478,71 @@ const AdminResourceDetail = () => {
                     </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row flex-wrap gap-4">
-
-                <Button
-                  variant="outline"
-                  icon={Download}
-                  iconPosition="left"
-                  onClick={() => {
-                    const token = localStorage.getItem("token");
-                    const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-                    window.open(
-                      `${apiBase.replace(/\/$/, "")}/resources/${id}/download?token=${token}`,
-                      "_blank",
-                    );
-                  }}
-                  className="flex-1 min-w-[140px] !rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
-                >
-                  Download
-                </Button>
-
-                {resource.status === "pending" && isAdmin && (
-                  <>
-                    <Button
-                      variant="outline"
-                      icon={CheckCircle}
-                      iconPosition="left"
-                      onClick={() => setShowApproveModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 min-w-[140px] !rounded-xl border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      icon={XCircle}
-                      iconPosition="left"
-                      onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 min-w-[140px] !rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
-                    >
-                      Reject
-                    </Button>
-                  </>
-                )}
-
-                {isAdmin && resource.status !== "pending" && (
+                <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row flex-wrap gap-4">
                   <Button
                     variant="outline"
-                    icon={Trash2}
+                    icon={Download}
                     iconPosition="left"
-                    onClick={() => setShowDeleteModal(true)}
-                    disabled={actionLoading}
-                    className="flex-1 min-w-[140px] !rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
+                    onClick={() => {
+                      const token = localStorage.getItem("token");
+                      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+                      window.open(
+                        `${apiBase.replace(/\/$/, "")}/resources/${id}/download?token=${token}`,
+                        "_blank",
+                      );
+                    }}
+                    className="flex-1 min-w-[140px] !rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
                   >
-                    Delete
+                    Download
                   </Button>
-                )}
+
+                  <Button
+                    variant="outline"
+                    icon={Eye}
+                    iconPosition="left"
+                    onClick={() => {
+                        console.log('AdminResourceDetail: Triggering preview for', id);
+                        setViewerState({
+                          isOpen: true,
+                          fileName: resource?.fileName || 'Resource',
+                          fileType: resource?.fileType || 'application/pdf',
+                          fileUrl: `/resources/${id}/view`,
+                          downloadUrl: `/resources/${id}/download`,
+                        });
+                    }}
+                    className="flex-1 min-w-[140px] !rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
+                  >
+                    View
+                  </Button>
+
+                  {isAdmin && resource.status === "pending" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        icon={CheckCircle}
+                        iconPosition="left"
+                        onClick={() => setShowApproveModal(true)}
+                        disabled={actionLoading}
+                        className="flex-1 min-w-[140px] !rounded-xl border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outline"
+                        icon={XCircle}
+                        iconPosition="left"
+                        onClick={() => setShowRejectModal(true)}
+                        disabled={actionLoading}
+                        className="flex-1 min-w-[140px] !rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold py-3.5 text-sm justify-center shadow-sm"
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
+
             </Card>
 
             <Card>
@@ -694,7 +711,7 @@ const AdminResourceDetail = () => {
 
             <Card>
               <h3 className="mb-3 text-sm font-semibold text-gray-700">
-                Details
+                Administrative Log
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -929,6 +946,18 @@ const AdminResourceDetail = () => {
           </div>
         </div>
       </Modal>
+
+      <FileViewer
+        isOpen={viewerState.isOpen}
+        onClose={() =>
+          setViewerState((prev) => ({ ...prev, isOpen: false }))
+        }
+        fileUrl={viewerState.fileUrl}
+        fileName={viewerState.fileName}
+        fileType={viewerState.fileType}
+        downloadUrl={viewerState.downloadUrl}
+      />
+    </>
     </DashboardLayout>
   );
 };

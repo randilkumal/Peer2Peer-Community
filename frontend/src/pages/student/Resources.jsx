@@ -26,7 +26,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Globe
+  Globe,
+  Eye
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -474,6 +475,15 @@ const StudentResources = () => {
             >
               Get
             </Button>
+            <Button
+              variant="outline"
+              icon={Eye}
+              iconPosition="left"
+              className="flex-1 !rounded-2xl font-bold py-3 border-gray-100 text-gray-500 hover:bg-gray-50 transition-all text-sm"
+              onClick={() => navigate(`/student/resources/${resource._id}`)}
+            >
+              View
+            </Button>
           </div>
 
           {/* Contextual actions */}
@@ -538,11 +548,16 @@ const StudentResources = () => {
       <div className="p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Resources</h1>
-            <p className="text-gray-600 mt-1">
-              Browse, upload, and download academic resources
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Resources</h1>
+              <p className="text-gray-600 mt-1">
+                Browse, upload, and download academic resources
+              </p>
+            </div>
           </div>
           <Button
             icon={Upload}
@@ -722,7 +737,7 @@ const StudentResources = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {aiSuggestions.map((suggestion, index) => (
+              {aiSuggestions.filter(s => s.isGeneric).map((suggestion, index) => (
                 <Card 
                   key={index} 
                   className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-white group relative"
