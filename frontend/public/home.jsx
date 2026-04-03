@@ -6,14 +6,14 @@ const Home = () => {
   return (
     <div className="w-full">
       {/* 1. HERO SECTION (Dark gradient background with overlay) */}
-      <section className="relative overflow-hidden bg-black pt-20 pb-32 lg:pt-32 lg:pb-48">
+      <section className="relative overflow-hidden bg-slate-900 pt-20 pb-32 lg:pt-32 lg:pb-48">
         <div className="absolute inset-0 overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop"
             alt="Students collaborating"
-            className="w-full h-full object-cover opacity-60"
+            className="w-full h-full object-cover opacity-20"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -267,4 +267,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Home

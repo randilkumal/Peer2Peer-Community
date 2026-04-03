@@ -2,6 +2,13 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
+import PublicLayout from './components/layout/PublicLayout'
+
+// Public pages
+import Home from './pages/public/Home'
+import About from './pages/public/About'
+import Contact from './pages/public/Contact'
+import Help from './pages/public/Help'
 
 // Auth pages
 import Login from './pages/auth/Login'
@@ -49,8 +56,11 @@ function App() {
       />
       
       <Routes>
-        {/* Default: redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Public Routes */}
+        <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+        <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
+        <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+        <Route path="/help" element={<PublicLayout><Help /></PublicLayout>} />
 
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
