@@ -91,66 +91,24 @@ const AdminEditSessionDetails = () => {
   };
 
   const validateForm = () => {
-    if (!form.title.trim()) {
-      toast.error("Title is required");
+    // Only validate Meeting Link field (as requested)
+    if (!form.isOnline) return true;
+
+    const link = form.meetingLink.trim();
+    if (!link) {
+      toast.error("Meeting link is required for online sessions");
       return false;
     }
 
-    if (form.title.trim().length < 5) {
-      toast.error("Title must be at least 5 characters long");
-      return false;
-    }
-
-    if (!form.moduleCode.trim()) {
-      toast.error("Module code is required");
-      return false;
-    }
-
-    if (!form.description.trim()) {
-      toast.error("Description is required");
-      return false;
-    }
-
-    if (form.description.trim().length < 20) {
-      toast.error("Description must be at least 20 characters long");
-      return false;
-    }
-
-    if (form.requiredStudents < 1) {
-      toast.error("Required students must be at least 1");
-      return false;
-    }
-
-    if (form.requiredExperts < 1) {
-      toast.error("Required experts must be at least 1");
-      return false;
-    }
-
-    if ((form.startTime && !form.endTime) || (!form.startTime && form.endTime)) {
-      toast.error("Please provide both start time and end time");
-      return false;
-    }
-
-    if ((form.date && !form.startTime) || (!form.date && form.startTime)) {
-      toast.error("Date and time should be provided together");
-      return false;
-    }
-
-    if (form.startTime && form.endTime && form.endTime <= form.startTime) {
-      toast.error("End time must be later than start time");
-      return false;
-    }
-
-    if (form.isOnline) {
-      if (!form.meetingLink.trim()) {
-        toast.error("Meeting link is required for online sessions");
+    try {
+      const url = new URL(link);
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        toast.error("Meeting link must start with http:// or https://");
         return false;
       }
-    } else {
-      if (form.date && !form.venue.trim()) {
-        toast.error("Venue is required for physical sessions");
-        return false;
-      }
+    } catch {
+      toast.error("Meeting link must be a valid URL");
+      return false;
     }
 
     return true;
@@ -331,10 +289,12 @@ const AdminEditSessionDetails = () => {
                     Meeting Link
                   </label>
                   <Input
+                    type="url"
                     label=""
                     value={form.meetingLink}
                     onChange={(e) => handleChange("meetingLink", e.target.value)}
                     placeholder="https://..."
+                    required={form.isOnline}
                   />
                 </div>
               ) : (
