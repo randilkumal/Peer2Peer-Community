@@ -277,9 +277,9 @@ const StudentResources = () => {
     try {
       setEditLoading(true);
       await API.put(`/resources/${selectedResource._id}`, {
-        title: editForm.title,
-        description: editForm.description,
-        moduleCode: editForm.moduleCode,
+        title: editForm.title?.trim(),
+        description: editForm.description ?? '',
+        moduleCode: editForm.moduleCode?.trim().toUpperCase(),
         type: editForm.resourceType
       });
 
@@ -289,7 +289,7 @@ const StudentResources = () => {
       setTimeout(() => fetchResources(), 500);
     } catch (error) {
       console.error('Edit error:', error);
-      toast.error('Failed to submit update');
+      toast.error(error.response?.data?.message || 'Failed to submit update');
     } finally {
       setEditLoading(false);
     }
