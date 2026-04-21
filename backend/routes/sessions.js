@@ -171,6 +171,40 @@ router.put('/:id', authorize('admin'), async (req, res) => {
       });
     }
 
+    // Check if trying to edit Schedule fields without proper requiredStudents/requiredExperts
+    const scheduleKeys = ['date', 'startTime', 'endTime', 'venue', 'meetingLink', 'isOnline'];
+    const scheduleUpdateAttempted = scheduleKeys.some((k) => Object.prototype.hasOwnProperty.call(updates, k));
+    
+    // Get the requiredStudents and requiredExperts values (new or existing)
+    const newRequiredStudents = updates.requiredStudents !== undefined ? updates.requiredStudents : session.requiredStudents;
+    const newRequiredExperts = updates.requiredExperts !== undefined ? updates.requiredExperts : session.requiredExperts;
+    
+    // If trying to edit Schedule fields, check if both requiredStudents and requiredExperts are properly filled
+    if (scheduleUpdateAttempted) {
+      const studentsInvalid = !newRequiredStudents || newRequiredStudents <= 0;
+      const expertsInvalid = !newRequiredExperts || newRequiredExperts <= 0;
+      if (studentsInvalid || expertsInvalid) {
+        return res.status(400).json({
+          success: false,
+          message: 'To edit this post with this data, you need to complete the minimum student and expert count required to conduct this session.',
+          errorCode: 'SCHEDULE_EDIT_REQUIRES_STUDENTS_EXPERTS',
+          requiresStudents: studentsInvalid,
+          requiresExperts: expertsInvalid
+        });
+      }
+
+      const joinedStudents = Array.isArray(session.participants) ? session.participants.length : 0;
+      if (joinedStudents < Number(newRequiredStudents)) {
+        return res.status(400).json({
+          success: false,
+          message: `Schedule can be edited only after ${newRequiredStudents} students have joined this session. Current joined students: ${joinedStudents}.`,
+          errorCode: 'SCHEDULE_EDIT_REQUIRES_STUDENT_JOINS',
+          requiredStudents: Number(newRequiredStudents),
+          joinedStudents
+        });
+      }
+    }
+
     // Apply updates (only known fields)
     const updatable = [
       'title',
@@ -195,10 +229,16 @@ router.put('/:id', authorize('admin'), async (req, res) => {
       }
     });
 
-    // If admin adds schedule details to an announcement, move requested -> pending automatically
-    const scheduleKeys = ['date', 'startTime', 'endTime', 'venue', 'meetingLink', 'isOnline'];
-    const scheduleTouched = scheduleKeys.some((k) => Object.prototype.hasOwnProperty.call(updates, k));
-    if (session.status === 'requested' && scheduleTouched) {
+    const hasFilledScheduleData = Boolean(
+      session.date ||
+      session.startTime ||
+      session.endTime ||
+      (typeof session.venue === 'string' && session.venue.trim()) ||
+      (typeof session.meetingLink === 'string' && session.meetingLink.trim())
+    );
+
+    // If admin adds schedule details after minimum counts are complete, move requested -> pending automatically
+    if (session.status === 'requested' && hasFilledScheduleData && session.requiredStudents > 0 && session.requiredExperts > 0) {
       session.status = 'pending';
     }
 
