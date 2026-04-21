@@ -3,7 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicLayout from "./components/layout/PublicLayout";
-
+import AdminUsers from "./pages/admin/Users";
 // Public pages
 import Home from "./pages/public/Home";
 import About from "./pages/public/About";
@@ -353,7 +353,7 @@ function App() {
               path="/users"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
-                  <ToBeImplemented />
+                  <AdminUsers />
                 </ProtectedRoute>
               }
             />
