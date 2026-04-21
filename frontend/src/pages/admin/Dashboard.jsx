@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/common/Card';
-import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
-import Loader from '../../components/common/Loader';
-import API from '../../utils/api';
-import { 
-  Users, 
-  UserCheck, 
-  Calendar, 
-  FileText, 
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import Card from "../../components/common/Card";
+import Badge from "../../components/common/Badge";
+import Button from "../../components/common/Button";
+import Loader from "../../components/common/Loader";
+import API from "../../utils/api";
+import {
+  Users,
+  UserCheck,
+  Calendar,
+  FileText,
   TrendingUp,
   AlertCircle,
   CheckCircle,
@@ -23,9 +23,9 @@ import {
   ArrowRight,
   UserPlus,
   Eye,
-  Award
-} from 'lucide-react';
-import { formatDate } from '../../utils/helpers';
+  Award,
+} from "lucide-react";
+import { formatDate } from "../../utils/helpers";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -45,7 +45,7 @@ const AdminDashboard = () => {
     pendingResources: 0,
     approvedResources: 0,
     totalGroups: 0,
-    totalPosts: 0
+    totalPosts: 0,
   });
 
   const [pendingExperts, setPendingExperts] = useState([]);
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all user counts
       const [
         allUsersRes,
@@ -69,22 +69,26 @@ const AdminDashboard = () => {
         lecturersRes,
         pendingExpertsRes,
         sessionsRes,
-        resourcesRes
+        resourcesRes,
       ] = await Promise.all([
         // All users
-        API.get('/users').catch(() => ({ data: { users: [] } })),
+        API.get("/users").catch(() => ({ data: { users: [] } })),
         // Students
-        API.get('/users?role=student').catch(() => ({ data: { users: [] } })),
+        API.get("/users?role=student").catch(() => ({ data: { users: [] } })),
         // All experts (active)
-        API.get('/users?role=expert&status=active').catch(() => ({ data: { users: [] } })),
+        API.get("/users?role=expert&status=active").catch(() => ({
+          data: { users: [] },
+        })),
         // Lecturers
-        API.get('/users?role=lecturer').catch(() => ({ data: { users: [] } })),
+        API.get("/users?role=lecturer").catch(() => ({ data: { users: [] } })),
         // Pending experts
-        API.get('/users?role=expert&status=pending').catch(() => ({ data: { users: [] } })),
+        API.get("/users?role=expert&status=pending").catch(() => ({
+          data: { users: [] },
+        })),
         // Sessions
-        API.get('/sessions').catch(() => ({ data: { sessions: [] } })),
+        API.get("/sessions").catch(() => ({ data: { sessions: [] } })),
         // Resources
-        API.get('/resources').catch(() => ({ data: { resources: [] } }))
+        API.get("/resources").catch(() => ({ data: { resources: [] } })),
       ]);
 
       const allUsers = allUsersRes.data.users || [];
@@ -104,62 +108,68 @@ const AdminDashboard = () => {
         pendingExperts: pendingExpertsData.length,
         activeExperts: experts.length,
         totalSessions: sessions.length,
-        activeSessions: sessions.filter(s => s.status === 'confirmed' || s.status === 'active').length,
-        completedSessions: sessions.filter(s => s.status === 'completed').length,
+        activeSessions: sessions.filter(
+          (s) => s.status === "confirmed" || s.status === "active",
+        ).length,
+        completedSessions: sessions.filter((s) => s.status === "completed")
+          .length,
         totalResources: resources.length,
-        pendingResources: resources.filter(r => r.status === 'pending').length,
-        approvedResources: resources.filter(r => r.status === 'approved').length,
+        pendingResources: resources.filter((r) => r.status === "pending")
+          .length,
+        approvedResources: resources.filter((r) => r.status === "approved")
+          .length,
         totalGroups: 0, // Will be updated when groups API is ready
-        totalPosts: 0  // Will be updated when posts API is ready
+        totalPosts: 0, // Will be updated when posts API is ready
       });
 
       // Set pending experts (limit to 5)
       setPendingExperts(pendingExpertsData.slice(0, 5));
 
       // Set pending resources (limit to 5)
-      setPendingResources(resources.filter(r => r.status === 'pending').slice(0, 5));
+      setPendingResources(
+        resources.filter((r) => r.status === "pending").slice(0, 5),
+      );
 
       // Set upcoming sessions (limit to 5)
       const upcoming = sessions
-        .filter(s => s.status === 'confirmed')
+        .filter((s) => s.status === "confirmed")
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .slice(0, 5);
       setUpcomingSessions(upcoming);
 
       // Create recent activities
       const activities = [];
-      
+
       if (pendingExpertsData.length > 0) {
         activities.push({
-          id: 'expert-' + Date.now(),
-          type: 'expert_application',
-          description: `${pendingExpertsData.length} new expert application${pendingExpertsData.length > 1 ? 's' : ''} received`,
-          time: 'Recent'
+          id: "expert-" + Date.now(),
+          type: "expert_application",
+          description: `${pendingExpertsData.length} new expert application${pendingExpertsData.length > 1 ? "s" : ""} received`,
+          time: "Recent",
         });
       }
 
-      if (resources.filter(r => r.status === 'pending').length > 0) {
+      if (resources.filter((r) => r.status === "pending").length > 0) {
         activities.push({
-          id: 'resource-' + Date.now(),
-          type: 'resource_upload',
-          description: `${resources.filter(r => r.status === 'pending').length} resource${resources.filter(r => r.status === 'pending').length > 1 ? 's' : ''} awaiting approval`,
-          time: 'Recent'
+          id: "resource-" + Date.now(),
+          type: "resource_upload",
+          description: `${resources.filter((r) => r.status === "pending").length} resource${resources.filter((r) => r.status === "pending").length > 1 ? "s" : ""} awaiting approval`,
+          time: "Recent",
         });
       }
 
-      if (sessions.filter(s => s.status === 'confirmed').length > 0) {
+      if (sessions.filter((s) => s.status === "confirmed").length > 0) {
         activities.push({
-          id: 'session-' + Date.now(),
-          type: 'session_created',
-          description: `${sessions.filter(s => s.status === 'confirmed').length} upcoming session${sessions.filter(s => s.status === 'confirmed').length > 1 ? 's' : ''}`,
-          time: 'Today'
+          id: "session-" + Date.now(),
+          type: "session_created",
+          description: `${sessions.filter((s) => s.status === "confirmed").length} upcoming session${sessions.filter((s) => s.status === "confirmed").length > 1 ? "s" : ""}`,
+          time: "Today",
         });
       }
 
       setRecentActivities(activities);
-
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -192,11 +202,16 @@ const AdminDashboard = () => {
         {/* Stats Cards Row 1 - Users */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           {/* Total Users */}
-          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/users')}>
+          <Card
+            className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/users")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Users</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.totalUsers}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.totalUsers}
+                </h3>
                 <p className="text-xs text-gray-500 mt-1">All registered</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
@@ -206,11 +221,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Students */}
-          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/users?role=student')}>
+          <Card
+            className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/users?role=student")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Students</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.totalStudents}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.totalStudents}
+                </h3>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   Active
@@ -223,11 +243,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Experts */}
-          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/users?role=expert')}>
+          <Card
+            className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/users?role=expert")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Experts</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.totalExperts}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.totalExperts}
+                </h3>
                 <p className="text-xs text-gray-500 mt-1">Active experts</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center">
@@ -237,11 +262,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Pending Expert Approvals */}
-          <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/expert-queue')}>
+          <Card
+            className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/admin/expert-queue")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-700 mb-1">Pending Experts</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.pendingExperts}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.pendingExperts}
+                </h3>
                 <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Needs review
@@ -257,11 +287,16 @@ const AdminDashboard = () => {
         {/* Stats Cards Row 2 - Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           {/* Total Sessions */}
-          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/sessions')}>
+          <Card
+            className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/admin/sessions")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Sessions</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.totalSessions}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.totalSessions}
+                </h3>
                 <p className="text-xs text-gray-500 mt-1">All sessions</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
@@ -275,7 +310,9 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Active Sessions</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.activeSessions}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.activeSessions}
+                </h3>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                   <Activity className="w-3 h-3" />
                   Currently running
@@ -288,11 +325,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Total Resources */}
-          <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/resources')}>
+          <Card
+            className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/admin/resources")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Resources</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.totalResources}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.totalResources}
+                </h3>
                 <p className="text-xs text-gray-500 mt-1">Total uploads</p>
               </div>
               <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -302,11 +344,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Pending Resources */}
-          <Card className="bg-gradient-to-br from-red-50 to-pink-50 border-red-200 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/resources?status=pending')}>
+          <Card
+            className="bg-gradient-to-br from-red-50 to-pink-50 border-red-200 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate("/admin/resources?status=pending")}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-700 mb-1">Pending Resources</p>
-                <h3 className="text-3xl font-bold text-gray-900">{stats.pendingResources}</h3>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {stats.pendingResources}
+                </h3>
                 <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Needs approval
@@ -330,11 +377,11 @@ const AdminDashboard = () => {
                   <UserCheck className="w-5 h-5 text-primary-600" />
                   Pending Expert Applications
                 </h2>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   icon={ArrowRight}
-                  onClick={() => navigate('/admin/expert-queue')}
+                  onClick={() => navigate("/admin/expert-queue")}
                 >
                   View All
                 </Button>
@@ -343,15 +390,19 @@ const AdminDashboard = () => {
               {pendingExperts.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <p className="text-gray-500">No pending expert applications</p>
+                  <p className="text-gray-500">
+                    No pending expert applications
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {pendingExperts.map((expert) => (
-                    <div 
+                    <div
                       key={expert._id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50/30 transition-all cursor-pointer"
-                      onClick={() => navigate(`/admin/expert-queue/${expert._id}`)}
+                      onClick={() =>
+                        navigate(`/admin/expert-queue/${expert._id}`)
+                      }
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 flex-1">
@@ -361,12 +412,24 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">{expert.fullName}</h3>
-                            <p className="text-sm text-gray-600">{expert.email}</p>
+                            <h3 className="font-semibold text-gray-900">
+                              {expert.fullName}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {expert.email}
+                            </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="info" size="sm">Year {expert.yearLevel}</Badge>
-                              <Badge variant="primary-outline" size="sm">{expert.specialization}</Badge>
-                              {expert.gpa && <Badge variant="success" size="sm">GPA: {expert.gpa}</Badge>}
+                              <Badge variant="info" size="sm">
+                                Year {expert.yearLevel}
+                              </Badge>
+                              <Badge variant="primary-outline" size="sm">
+                                {expert.specialization}
+                              </Badge>
+                              {expert.gpa && (
+                                <Badge variant="success" size="sm">
+                                  GPA: {expert.gpa}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -385,11 +448,11 @@ const AdminDashboard = () => {
                   <FileText className="w-5 h-5 text-primary-600" />
                   Pending Resource Approvals
                 </h2>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   icon={ArrowRight}
-                  onClick={() => navigate('/admin/resources?status=pending')}
+                  onClick={() => navigate("/admin/resources?status=pending")}
                 >
                   View All
                 </Button>
@@ -403,20 +466,29 @@ const AdminDashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {pendingResources.map((resource) => (
-                    <div 
+                    <div
                       key={resource._id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-all cursor-pointer"
-                      onClick={() => navigate(`/admin/resources/${resource._id}`)}
+                      onClick={() =>
+                        navigate(`/admin/resources/${resource._id}`)
+                      }
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="primary-outline" size="sm">{resource.moduleCode}</Badge>
-                            <Badge variant="default" size="sm">{resource.resourceType}</Badge>
+                            <Badge variant="primary-outline" size="sm">
+                              {resource.moduleCode}
+                            </Badge>
+                            <Badge variant="default" size="sm">
+                              {resource.resourceType}
+                            </Badge>
                           </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">{resource.title}</h3>
+                          <h3 className="font-semibold text-gray-900 mb-1">
+                            {resource.title}
+                          </h3>
                           <p className="text-sm text-gray-600">
-                            By {resource.uploader?.fullName} • {formatDate(resource.createdAt)}
+                            By {resource.uploader?.fullName} •{" "}
+                            {formatDate(resource.createdAt)}
                           </p>
                         </div>
                         <Button size="sm" variant="outline" icon={Eye}>
@@ -436,11 +508,11 @@ const AdminDashboard = () => {
                   <Calendar className="w-5 h-5 text-primary-600" />
                   Upcoming Sessions
                 </h2>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   icon={ArrowRight}
-                  onClick={() => navigate('/admin/sessions')}
+                  onClick={() => navigate("/admin/sessions")}
                 >
                   View All
                 </Button>
@@ -454,21 +526,29 @@ const AdminDashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {upcomingSessions.map((session) => (
-                    <div 
+                    <div
                       key={session._id}
                       className="border border-gray-200 rounded-lg p-4"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{session.title}</h3>
-                          <p className="text-sm text-gray-600">{session.moduleCode}</p>
+                          <h3 className="font-semibold text-gray-900">
+                            {session.title}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {session.moduleCode}
+                          </p>
                         </div>
                         <Badge variant="success">Confirmed</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>{session.date ? formatDate(session.date) : 'Date TBA'}</span>
+                        <span>
+                          {session.date ? formatDate(session.date) : "Date TBA"}
+                        </span>
                         <span>•</span>
-                        <span>{session.participants?.length || 0} students</span>
+                        <span>
+                          {session.participants?.length || 0} students
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -481,37 +561,39 @@ const AdminDashboard = () => {
           <div className="space-y-6">
             {/* Quick Actions */}
             <Card>
-              <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">
+                Quick Actions
+              </h3>
               <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  fullWidth 
+                <Button
+                  variant="outline"
+                  fullWidth
                   icon={UserCheck}
-                  onClick={() => navigate('/admin/expert-queue')}
+                  onClick={() => navigate("/admin/expert-queue")}
                 >
                   Review Experts ({stats.pendingExperts})
                 </Button>
-                <Button 
-                  variant="outline" 
-                  fullWidth 
+                <Button
+                  variant="outline"
+                  fullWidth
                   icon={FileText}
-                  onClick={() => navigate('/admin/resources?status=pending')}
+                  onClick={() => navigate("/admin/resources?status=pending")}
                 >
                   Approve Resources ({stats.pendingResources})
                 </Button>
-                <Button 
-                  variant="outline" 
-                  fullWidth 
+                <Button
+                  variant="outline"
+                  fullWidth
                   icon={Users}
-                  onClick={() => navigate('/admin/users')}
+                  onClick={() => navigate("/users")}
                 >
                   Manage Users
                 </Button>
-                <Button 
-                  variant="outline" 
-                  fullWidth 
+                <Button
+                  variant="outline"
+                  fullWidth
                   icon={Calendar}
-                  onClick={() => navigate('/admin/sessions')}
+                  onClick={() => navigate("/admin/sessions")}
                 >
                   View Sessions
                 </Button>
@@ -527,19 +609,31 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-700">Lecturers</span>
-                  <span className="font-bold text-gray-900">{stats.totalLecturers}</span>
+                  <span className="font-bold text-gray-900">
+                    {stats.totalLecturers}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">Completed Sessions</span>
-                  <span className="font-bold text-gray-900">{stats.completedSessions}</span>
+                  <span className="text-sm text-gray-700">
+                    Completed Sessions
+                  </span>
+                  <span className="font-bold text-gray-900">
+                    {stats.completedSessions}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">Approved Resources</span>
-                  <span className="font-bold text-gray-900">{stats.approvedResources}</span>
+                  <span className="text-sm text-gray-700">
+                    Approved Resources
+                  </span>
+                  <span className="font-bold text-gray-900">
+                    {stats.approvedResources}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-700">Active Experts</span>
-                  <span className="font-bold text-gray-900">{stats.activeExperts}</span>
+                  <span className="font-bold text-gray-900">
+                    {stats.activeExperts}
+                  </span>
                 </div>
               </div>
             </Card>
@@ -551,11 +645,16 @@ const AdminDashboard = () => {
                 Recent Activity
               </h3>
               {recentActivities.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No recent activity</p>
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No recent activity
+                </p>
               ) : (
                 <div className="space-y-3">
                   {recentActivities.map((activity) => (
-                    <div key={activity.id} className="border-l-2 border-primary-500 pl-3 py-2">
+                    <div
+                      key={activity.id}
+                      className="border-l-2 border-primary-500 pl-3 py-2"
+                    >
                       <p className="text-sm font-medium text-gray-900">
                         {activity.description}
                       </p>
