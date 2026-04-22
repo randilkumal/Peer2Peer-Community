@@ -190,7 +190,7 @@ const StudentResourceDetail = () => {
                     </Badge>
                   </div>
 
-                  <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+                  <h1 className="text-2xl font-bold text-gray-900 leading-tight">
                     {resource.title}
                   </h1>
 
@@ -254,13 +254,13 @@ const StudentResourceDetail = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-6 flex flex-col sm:flex-row gap-4">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Button
                   variant="primary"
                   icon={Download}
                   iconPosition="left"
                   onClick={handleDownload}
-                  className="flex-1 !rounded-lg font-bold py-3.5 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-sm justify-center"
+                  className="!rounded-lg font-bold py-2 px-6 bg-blue-600 hover:bg-blue-700 shadow-md transition-all text-xs justify-center"
                 >
                   Download
                 </Button>
@@ -269,7 +269,7 @@ const StudentResourceDetail = () => {
                   icon={Eye}
                   iconPosition="left"
                   onClick={handleView}
-                  className="flex-1 !rounded-lg font-bold py-3.5 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all text-sm justify-center"
+                  className="!rounded-lg font-bold py-2 px-6 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all text-xs justify-center"
                 >
                   View Content
                 </Button>
