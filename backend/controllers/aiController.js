@@ -335,10 +335,19 @@ exports.suggestSessionVideos = async (req, res) => {
 };
 
 const Groq = require('groq-sdk');
-const pdf = require('pdf-parse');
 const fs = require('fs');
 const path = require('path');
 
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  try {
+    const { DOMMatrix } = require('canvas');
+    globalThis.DOMMatrix = DOMMatrix;
+  } catch (err) {
+    console.warn('Warning: canvas DOMMatrix polyfill not available. PDF parsing may fail on Node 18+ without canvas installed.');
+  }
+}
+
+const pdf = require('pdf-parse');
 
 /**
  * @desc    Generate a quiz based on an uploaded document (PDF, Slides, etc)
