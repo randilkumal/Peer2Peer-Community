@@ -318,44 +318,33 @@ const StudentProfile = () => {
   return (
     <DashboardLayout>
       <div className="p-8 max-w-6xl mx-auto">
-        {/* Facebook-style Cover and DP */}
-        <div className="mb-8 relative bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-          {/* Cover Photo */}
-          <div className="h-48 md:h-64 w-full relative bg-gradient-to-r from-primary-50 via-gray-100 to-indigo-50">
-            <div className="absolute inset-0 bg-white/20"></div>
-          </div>
-          
-          {/* Profile Details Container */}
-          <div className="px-6 pb-6 relative pt-0">
-            {/* Profile Picture Overlay */}
-            <div className="absolute -top-16 md:-top-20 left-6 z-10">
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-full p-1.5 shadow-lg">
-                <div className="w-full h-full bg-primary-100 rounded-full flex items-center justify-center border border-gray-100">
-                  <span className="text-5xl md:text-6xl font-bold text-primary-700">
-                    {user.fullName?.charAt(0)}
-                  </span>
-                </div>
-              </div>
+        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row items-center md:items-start gap-6">
+          {/* Profile Picture */}
+          <div className="flex-shrink-0">
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-primary-100 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+              <span className="text-4xl md:text-5xl font-bold text-primary-700">
+                {user.fullName?.charAt(0)}
+              </span>
             </div>
+          </div>
 
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 ml-0 md:ml-48 mt-16 md:mt-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{user.fullName || `${user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'} Profile`}</h1>
-                <p className="text-gray-600 font-medium text-lg">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'} Profile</p>
-                <p className="text-gray-500 text-sm mt-1">Manage your identity and context.</p>
-              </div>
-              
-              <div className="flex-shrink-0 mt-4 md:mt-0">
-                {!isEditing ? (
-                  <Button onClick={() => setIsEditing(true)} icon={Edit2} className="w-full md:w-auto shadow-sm">
-                    Edit Details
-                  </Button>
-                ) : (
-                  <Button variant="outline" onClick={() => setIsEditing(false)} icon={X} className="w-full md:w-auto shadow-sm">
-                    Cancel Editing
-                  </Button>
-                )}
-              </div>
+          <div className="flex-1 text-center md:text-left flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mt-2 md:mt-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.fullName || `${user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'} Profile`}</h1>
+              <p className="text-gray-600 font-medium text-base mt-1">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'} Profile</p>
+              <p className="text-gray-500 text-sm mt-1">Manage your identity and context.</p>
+            </div>
+            
+            <div className="flex-shrink-0 w-full md:w-auto">
+              {!isEditing ? (
+                <Button onClick={() => setIsEditing(true)} icon={Edit2} className="w-full md:w-auto shadow-sm">
+                  Edit Details
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => setIsEditing(false)} icon={X} className="w-full md:w-auto shadow-sm">
+                  Cancel Editing
+                </Button>
+              )}
             </div>
           </div>
         </div>

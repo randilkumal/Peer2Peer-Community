@@ -64,7 +64,7 @@ const Sidebar = () => {
         { to: '/admin/sessions', icon: Calendar, label: 'Sessions' },
         { to: '/resources', icon: FileText, label: 'Resources' },
         { to: '/groups', icon: Shield, label: 'Groups' },
-        { to: '/feed', icon: MessageSquare, label: 'Feed' },
+        { to: '/chat', icon: MessageSquare, label: 'Chat' },
         { to: '/settings', icon: Settings, label: 'Settings' },
       ],
     };
@@ -78,16 +78,16 @@ const Sidebar = () => {
   if (!user) return null;
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col flex-shrink-0">
+    <aside className="w-72 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col flex-shrink-0 shadow-sm">
       {/* Logo/Brand */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="h-24 px-6 border-b border-gray-100 flex items-center pt-4">
         <div className="flex items-center gap-3">
-          <div className="bg-primary-500 p-2.5 rounded-xl">
-            <GraduationCap className="w-6 h-6 text-white" />
+          <div className="bg-primary-600 p-2.5 rounded-xl shadow-sm">
+            <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-gray-900">Academic</h1>
-            <p className="text-sm text-gray-600">Portal</p>
+            <h1 className="font-semibold text-base text-gray-900 leading-tight">Academic Portal</h1>
+            <p className="text-xs text-gray-500">Collaboration workspace</p>
           </div>
         </div>
       </div>
@@ -95,37 +95,37 @@ const Sidebar = () => {
 
 
       {/* Navigation Links */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         {navigationLinks.map((link) => {
           const Icon = link.icon;
           return (
             <Link
               key={link.to}
               to={link.to}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive(link.to)
-                  ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-primary-50 text-primary-700 font-semibold shadow-sm ring-1 ring-primary-100'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              <Icon className={`w-5 h-5 ${isActive(link.to) ? 'text-primary-600' : 'text-gray-500'}`} />
-              <span>{link.label}</span>
+              <Icon className={`w-4 h-4 ${isActive(link.to) ? 'text-primary-600' : 'text-gray-500'}`} />
+              <span className="text-sm">{link.label}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* Logout Button */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-100">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
         >
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-medium">Logout</span>
         </button>
       </div>
-    </div>
+    </aside>
   );
 };
 

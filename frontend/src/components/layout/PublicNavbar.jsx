@@ -19,28 +19,28 @@ const PublicNavbar = () => {
   };
 
   return (
-    <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20">
+    <nav className="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm transition-all">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center transform transition-transform group-hover:scale-105 shadow-md shadow-primary-500/20">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center transform transition-transform group-hover:scale-105 shadow-sm">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-extrabold text-gray-900 tracking-tight">
+              <span className="text-lg font-semibold text-gray-900 tracking-tight">
                 PeerBridge
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-semibold transition-colors ${
+                className={`text-sm font-medium transition-colors ${
                   isActive(item.href)
                     ? 'text-primary-600'
                     : 'text-gray-600 hover:text-gray-900'
@@ -61,7 +61,7 @@ const PublicNavbar = () => {
             </Link>
             <Link
               to="/register"
-              className="group inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-primary-700 transition-all shadow-md shadow-primary-500/20"
+              className="group inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-700 transition-all shadow-sm"
             >
               Get Started
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
@@ -86,7 +86,7 @@ const PublicNavbar = () => {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-xl">
+        <div className="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
           <div className="px-4 pt-2 pb-6 space-y-1 sm:px-3">
             {navigation.map((item) => (
               <Link

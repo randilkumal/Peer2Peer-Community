@@ -24,6 +24,7 @@ import {
   UserPlus,
   Eye,
   Award,
+  CalendarDays,
 } from "lucide-react";
 import { formatDate } from "../../utils/helpers";
 
@@ -51,6 +52,13 @@ const AdminDashboard = () => {
   const [pendingExperts, setPendingExperts] = useState([]);
   const [pendingResources, setPendingResources] = useState([]);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [todaySessions, setTodaySessions] = useState([]);
+  const [sessionStatusSummary, setSessionStatusSummary] = useState({
+    announcements: 0,
+    pending: 0,
+    cancelled: 0,
+    completed: 0,
+  });
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
@@ -131,11 +139,39 @@ const AdminDashboard = () => {
       );
 
       // Set upcoming sessions (limit to 5)
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(startOfToday);
+      endOfToday.setHours(23, 59, 59, 999);
+
+      const sessionAnnouncements = sessions.filter((s) => s.status === "requested");
+      const pendingSessions = sessions.filter((s) => s.status === "pending");
+      const cancelledSessions = sessions.filter((s) => s.status === "cancelled");
+      const completedSessions = sessions.filter((s) => s.status === "completed");
+      const upcomingSource = sessions.filter(
+        (s) =>
+          ["requested", "pending", "confirmed", "active"].includes(s.status) &&
+          (!s.date || new Date(s.date) >= startOfToday),
+      );
+
       const upcoming = sessions
-        .filter((s) => s.status === "confirmed")
+        .filter((s) => upcomingSource.includes(s))
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .slice(0, 5);
       setUpcomingSessions(upcoming);
+
+      const today = sessions
+        .filter((s) => s.date && new Date(s.date) >= startOfToday && new Date(s.date) <= endOfToday)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 4);
+      setTodaySessions(today);
+
+      setSessionStatusSummary({
+        announcements: sessionAnnouncements.length,
+        pending: pendingSessions.length,
+        cancelled: cancelledSessions.length,
+        completed: completedSessions.length,
+      });
 
       // Create recent activities
       const activities = [];
@@ -521,7 +557,7 @@ const AdminDashboard = () => {
               {upcomingSessions.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No upcoming sessions</p>
+                  <p className="text-gray-500">No upcoming sessions in announcements</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -539,7 +575,21 @@ const AdminDashboard = () => {
                             {session.moduleCode}
                           </p>
                         </div>
-                        <Badge variant="success">Confirmed</Badge>
+                        <Badge
+                          variant={
+                            session.status === "requested"
+                              ? "info"
+                              : session.status === "pending"
+                                ? "warning"
+                                : "success"
+                          }
+                        >
+                          {session.status === "requested"
+                            ? "Announcement"
+                            : session.status === "pending"
+                              ? "Pending"
+                              : "Confirmed"}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>
@@ -636,6 +686,49 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
+            </Card>
+
+            {/* Session Calendar Summary */}
+            <Card>
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-primary-600" />
+                Session Calendar
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500">Today</p>
+                  <p className="text-xl font-bold text-gray-900">{todaySessions.length}</p>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+                  <p className="text-xs text-blue-600">Announcements</p>
+                  <p className="text-xl font-bold text-blue-700">{sessionStatusSummary.announcements}</p>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs text-amber-700">Pending</p>
+                  <p className="text-xl font-bold text-amber-800">{sessionStatusSummary.pending}</p>
+                </div>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                  <p className="text-xs text-red-600">Cancelled</p>
+                  <p className="text-xl font-bold text-red-700">{sessionStatusSummary.cancelled}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 mb-4">
+                <p className="text-xs text-emerald-700">Completed</p>
+                <p className="text-xl font-bold text-emerald-800">{sessionStatusSummary.completed}</p>
+              </div>
+
+              {todaySessions.length > 0 && (
+                <div className="space-y-2">
+                  {todaySessions.map((session) => (
+                    <div key={session._id} className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-sm font-medium text-gray-900 line-clamp-1">{session.title}</p>
+                      <p className="text-xs text-gray-500">{session.moduleCode}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             {/* Recent Activity */}
