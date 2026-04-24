@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 
 const DashboardLayout = ({ children }) => {
   return (
-    <div className="h-screen bg-gray-100 flex overflow-hidden">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
       

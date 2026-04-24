@@ -27,7 +27,7 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-gray-200/50 bg-gray-50/90 backdrop-blur-md">
+    <header className="sticky top-0 z-20 border-b border-gray-200/50 bg-white/80 backdrop-blur-md">
       <div className="mx-auto w-full max-w-[1440px] px-4 md:px-6 lg:px-8">
         <div className="flex h-24 items-center justify-between gap-6 pt-4">
           

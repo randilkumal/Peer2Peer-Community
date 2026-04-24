@@ -78,7 +78,7 @@ const Sidebar = () => {
   if (!user) return null;
 
   return (
-    <aside className="w-72 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-r border-gray-200 h-screen sticky top-0 flex flex-col flex-shrink-0 shadow-sm">
+    <aside className="w-72 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col flex-shrink-0 shadow-sm">
       {/* Logo/Brand */}
       <div className="h-24 px-6 border-b border-gray-100 flex items-center pt-4">
         <div className="flex items-center gap-3">
