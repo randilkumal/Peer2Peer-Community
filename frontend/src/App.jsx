@@ -59,6 +59,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApprovalQueue from "./pages/admin/ExpertQueue";
 import AdminExpertDetail from "./pages/admin/ExpertDetail";
 import ToBeImplemented from "./pages/ToBeImplemented";
+import Settings from "./pages/Settings";
 
 function App() {
   const { user } = useAuth();
@@ -346,9 +347,8 @@ function App() {
                 user?.role === "lecturer" ? <LecturerProfile /> : <Profile />
               }
             />
-            <Route path="/settings" element={<ToBeImplemented />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/chat" element={<Chat />} />
-            <Route path="/feed" element={<ToBeImplemented />} />
             <Route
               path="/users"
               element={

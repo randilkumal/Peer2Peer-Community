@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 
 const DashboardLayout = ({ children }) => {
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
+    <div className="h-screen bg-gray-100 flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
       
@@ -14,8 +14,10 @@ const DashboardLayout = ({ children }) => {
         <Navbar />
         
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1440px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -66,7 +66,7 @@ const Input = ({
           required={required}
           className={`
             w-full px-4 py-2.5 
-            border rounded-lg 
+            border rounded-xl 
             transition-all
             outline-none
             text-sm
@@ -74,11 +74,11 @@ const Input = ({
             ${hasRightIcon ? 'pr-11' : ''}
             ${error 
               ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
-              : 'border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
+              : 'border-gray-300 focus:border-primary-400 focus:ring-2 focus:ring-primary-200'
             }
             ${disabled 
               ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
-              : 'bg-white text-gray-900'
+              : 'bg-white text-gray-900 shadow-sm'
             }
           `}
           {...props}

@@ -14,17 +14,17 @@ const Button = ({
   ...props 
 }) => {
   // Base styles
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   // Variant styles
   const variants = {
-    primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
-    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500',
-    outline: 'border-2 border-blue-200 text-blue-500 hover:bg-blue-50 hover:border-blue-300 focus:ring-blue-200',
-    danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
-    success: 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-500',
-    warning: 'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500',
-    ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
+    primary: 'bg-primary-600 text-white shadow-sm hover:bg-primary-700 focus:ring-primary-400',
+    secondary: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-300',
+    outline: 'border border-primary-200 text-primary-700 hover:bg-primary-50 focus:ring-primary-200',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-400',
+    success: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-400',
+    warning: 'bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-400',
+    ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-300',
     link: 'text-primary-500 hover:text-primary-600 hover:underline focus:ring-primary-500',
   };
   
@@ -32,9 +32,9 @@ const Button = ({
   const sizes = {
     xs: 'px-3 py-1.5 text-xs gap-1',
     sm: 'px-4 py-2 text-sm gap-1.5',
-    md: 'px-6 py-2.5 text-base gap-2',
-    lg: 'px-8 py-3 text-lg gap-2.5',
-    xl: 'px-10 py-4 text-xl gap-3',
+    md: 'px-5 py-2.5 text-sm gap-2',
+    lg: 'px-6 py-3 text-base gap-2.5',
+    xl: 'px-8 py-3.5 text-lg gap-3',
   };
 
   // Width style

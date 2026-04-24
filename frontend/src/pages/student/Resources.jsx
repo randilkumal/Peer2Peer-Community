@@ -305,7 +305,8 @@ const StudentResources = () => {
         title: editForm.title?.trim(),
         description: editForm.description ?? '',
         moduleCode: editForm.moduleCode?.trim().toUpperCase(),
-        type: editForm.resourceType
+        type: editForm.resourceType,
+        resourceType: editForm.resourceType
       });
 
       toast.success('Update submitted successfully! Pending admin approval.');
@@ -316,8 +317,13 @@ const StudentResources = () => {
         fetchCounts();
       }, 500);
     } catch (error) {
-      console.error('Edit error:', error);
-      toast.error(error.response?.data?.message || 'Failed to submit update');
+      console.error('Edit error:', error.response?.data || error);
+      const detailedMessage =
+        error.response?.data?.errors?.[0]?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Failed to submit update';
+      toast.error(detailedMessage);
     } finally {
       setEditLoading(false);
     }

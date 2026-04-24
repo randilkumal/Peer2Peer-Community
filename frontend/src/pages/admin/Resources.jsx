@@ -36,6 +36,7 @@ const AdminResources = () => {
   const [resources, setResources] = useState([]);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [selectedStatus, setSelectedStatus] = useState(searchParams.get("status") || "pending");
+  const [pendingSubTab, setPendingSubTab] = useState("new"); // "new" | "updates"
   const [selectedModule, setSelectedModule] = useState(searchParams.get("module") || "");
   const [modules, setModules] = useState([]);
   const [modulesLoading, setModulesLoading] = useState(false);
@@ -69,6 +70,8 @@ const AdminResources = () => {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
+    pendingNew: 0,
+    pendingUpdates: 0,
     approved: 0,
     rejected: 0,
   });
@@ -122,8 +125,10 @@ const AdminResources = () => {
 
       setResources(all);
       setStats({
-        total: all.length,
+        total: all.filter(r => !(r.status === "approved" && r.pendingUpdate?.status === "pending")).length,
         pending: all.filter((r) => r.status === "pending" || r.pendingUpdate?.status === "pending").length,
+        pendingNew: all.filter((r) => r.status === "pending").length,
+        pendingUpdates: all.filter((r) => r.status === "approved" && r.pendingUpdate?.status === "pending").length,
         approved: all.filter((r) => r.status === "approved" && r.pendingUpdate?.status !== "pending").length,
         rejected: all.filter((r) => r.status === "rejected").length,
       });
@@ -307,6 +312,17 @@ const AdminResources = () => {
 
   const filteredResources = useMemo(() => {
     return resources.filter((resource) => {
+      // Hide pending updates from "All Resources" tab as requested
+      if (selectedStatus === "" && resource.status === "approved" && resource.pendingUpdate?.status === "pending") {
+        return false;
+      }
+
+      // Handle sub-tabs when in "pending" status
+      if (selectedStatus === "pending") {
+        if (pendingSubTab === "new" && resource.status !== "pending") return false;
+        if (pendingSubTab === "updates" && !(resource.status === "approved" && resource.pendingUpdate?.status === "pending")) return false;
+      }
+
       if (!searchQuery.trim()) return true;
 
       const query = searchQuery.toLowerCase();
@@ -317,7 +333,7 @@ const AdminResources = () => {
         resource.uploader?.fullName?.toLowerCase().includes(query)
       );
     });
-  }, [resources, searchQuery]);
+  }, [resources, searchQuery, selectedStatus, pendingSubTab]);
 
   const statusOptions = [
     { value: "", label: "All Status" },
@@ -439,6 +455,31 @@ const AdminResources = () => {
             })}
           </div>
         </div>
+
+        {selectedStatus === "pending" && (
+          <div className="mb-6 flex gap-3">
+            <button
+              onClick={() => setPendingSubTab("new")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                pendingSubTab === "new"
+                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              New Uploads ({stats.pendingNew})
+            </button>
+            <button
+              onClick={() => setPendingSubTab("updates")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                pendingSubTab === "updates"
+                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              Pending Updates ({stats.pendingUpdates})
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
