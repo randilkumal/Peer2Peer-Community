@@ -490,11 +490,14 @@ const StudentResources = () => {
               <div className={`px-3 py-1 rounded-full text-xs ${config.bg} ${config.text} tracking-wide shadow-sm font-medium`}>
                 {resource.resourceType}
               </div>
-              {resource.pendingUpdate && (
-                <div className="px-3 py-1 rounded-full text-[10px] bg-yellow-100 text-yellow-700 tracking-wide font-bold shadow-sm whitespace-nowrap flex items-center gap-1">
-                   <Clock className="w-3 h-3" /> Update Pending
-                </div>
-              )}
+              {/* Correct Status Badge */}
+              {resource.status === 'approved' ? (
+                <Badge variant="success" size="xs" className="font-bold uppercase tracking-wider">Approved</Badge>
+              ) : resource.status === 'pending' ? (
+                <Badge variant="warning" size="xs" className="font-bold uppercase tracking-wider">Pending</Badge>
+              ) : resource.status === 'rejected' ? (
+                <Badge variant="danger" size="xs" className="font-bold uppercase tracking-wider">Rejected</Badge>
+              ) : null}
             </div>
           </div>
         </div>
