@@ -27,7 +27,8 @@ import {
   CheckCircle,
   XCircle,
   Globe,
-  Eye
+  Eye,
+  Edit2
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -65,6 +66,7 @@ const StudentResources = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [ratingSubmitLoading, setRatingSubmitLoading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState({});
+  const [counts, setCounts] = useState({ all: 0, uploads: 0, history: 0 });
 
   // Upload form
   const [uploadForm, setUploadForm] = useState({
@@ -96,6 +98,7 @@ const StudentResources = () => {
       fetchResources();
       fetchModules();
       loadEnrolledModules();
+      fetchCounts();
     } else {
       console.log('⏳ Waiting for user to load...');
     }
@@ -188,6 +191,25 @@ const StudentResources = () => {
   }
 };
 
+  const fetchCounts = async () => {
+    try {
+      if (!user?._id) return;
+      const [allRes, uploadsRes, historyRes] = await Promise.all([
+        API.get('/resources?status=approved'),
+        API.get(`/resources?uploader=${user._id}`),
+        API.get('/resources/my-downloads')
+      ]);
+
+      setCounts({
+        all: allRes.data.resources?.length || 0,
+        uploads: uploadsRes.data.resources?.length || 0,
+        history: historyRes.data.resources?.length || 0
+      });
+    } catch (err) {
+      console.error('Error fetching resource counts:', err);
+    }
+  };
+
   const fetchAISuggestions = async () => {
     try {
       setLoadingAI(true);
@@ -255,7 +277,10 @@ const StudentResources = () => {
       });
       
       setActiveTab('my-uploads');
-      setTimeout(() => fetchResources(), 500);
+      setTimeout(() => {
+        fetchResources();
+        fetchCounts();
+      }, 500);
     } catch (error) {
       console.error('Upload error:', error);
     } finally {
@@ -286,7 +311,10 @@ const StudentResources = () => {
       toast.success('Update submitted successfully! Pending admin approval.');
       setShowEditModal(false);
       setSelectedResource(null);
-      setTimeout(() => fetchResources(), 500);
+      setTimeout(() => {
+        fetchResources();
+        fetchCounts();
+      }, 500);
     } catch (error) {
       console.error('Edit error:', error);
       toast.error(error.response?.data?.message || 'Failed to submit update');
@@ -303,6 +331,7 @@ const StudentResources = () => {
       setShowDeleteModal(false);
       setSelectedResource(null);
       fetchResources();
+      fetchCounts();
     } catch (err) {
       console.error('Delete error:', err);
     } finally {
@@ -444,15 +473,15 @@ const StudentResources = () => {
     const isOwner = uploaderId?.toString() === user?._id?.toString();
 
     return (
-      <Card className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white group grayscale-[0.2] hover:grayscale-0">
+      <Card className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white group grayscale-[0.1] hover:grayscale-0">
         {/* Top Section: Icon and Type Badge */}
-        <div className="p-5 pb-2">
+        <div className="p-4 pb-4">
           <div className="flex items-start justify-between">
-            <div className={`w-14 h-14 ${config.iconBg} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
-              {getFileIcon(resource.fileType, `w-7 h-7 ${config.iconColor}`)}
+            <div className={`w-10 h-10 ${config.iconBg} rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
+              {getFileIcon(resource.fileType, `w-5 h-5 ${config.iconColor}`)}
             </div>
             <div className="flex flex-col items-end gap-2">
-              <div className={`px-4 py-2 rounded-full text-sm ${config.bg} ${config.text} tracking-wide shadow-sm`}>
+              <div className={`px-3 py-1 rounded-full text-xs ${config.bg} ${config.text} tracking-wide shadow-sm font-medium`}>
                 {resource.resourceType}
               </div>
               {resource.pendingUpdate && (
@@ -464,21 +493,20 @@ const StudentResources = () => {
           </div>
         </div>
 
-        {/* Content Section */}
-        <div className="p-5 pt-3 flex-1 flex flex-col">
-          <h3 className="text-lg font-extrabold text-[#0a3d62] leading-snug line-clamp-2 mb-1 min-h-[3.5rem]">
+        <div className="p-4 pt-0 flex-1 flex flex-col">
+          <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-2 hover:text-blue-600 transition-colors">
             {resource.title}
           </h3>
-          <p className="text-xs text-[#3c6382] uppercase tracking-widest mb-3">
+          <p className="text-[10px] text-[#3c6382] uppercase tracking-widest mb-1.5">
             {resource.moduleCode}
           </p>
           
-          <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-4 flex-1">
+          <p className="text-[13px] text-gray-500 leading-relaxed line-clamp-2 mb-1.5">
             {resource.description || "Comprehensive academic resource shared by peers to enhance your learning experience."}
           </p>
 
           {/* rating display */}
-          <div className="flex items-center gap-1.5 mb-5 px-3 py-1.5 bg-gray-50 rounded-xl w-fit">
+          <div className="flex items-center gap-1.5 mb-2 px-2 py-0.5 bg-gray-50 rounded-lg w-fit">
             <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star 
@@ -492,10 +520,10 @@ const StudentResources = () => {
             </span>
           </div>
 
-          <div className="h-px bg-gray-100 mb-5" />
+          <div className="h-px bg-gray-100 mb-2" />
 
           {/* Footer Info */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
                 {resource.uploader?.profilePicture ? (
@@ -515,44 +543,12 @@ const StudentResources = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <Download className="w-4 h-4" />
-              <span className="text-xs font-black">{resource.downloadCount || 0}</span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="primary"
-              icon={Download}
-              iconPosition="left"
-              className="flex-1 !rounded-2xl font-bold py-3 shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm tracking-wide bg-blue-600 hover:bg-blue-700"
-              onClick={() => handleDownload(resource._id)}
-            >
-              Get
-            </Button>
-            <Button
-              variant="outline"
-              icon={Eye}
-              iconPosition="left"
-              className="flex-1 !rounded-2xl font-bold py-3 border-gray-100 text-gray-500 hover:bg-gray-50 transition-all text-sm"
-              onClick={() => navigate(`/student/resources/${resource._id}`)}
-            >
-              View
-            </Button>
-          </div>
-
-          {/* Contextual actions */}
-          {showActions && (isOwner || (activeTab === 'history' && !resource.userRated && !isOwner)) && (
-            <div className="flex gap-2 mt-3 flex-wrap">
+            <div className="flex items-center gap-2">
               {isOwner && activeTab === 'my-uploads' && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="flex-1 text-blue-500 hover:bg-blue-50 font-bold text-xs py-1.5 !rounded-xl"
-                    onClick={() => {
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedResource(resource);
                       setEditForm({
                         title: resource.title,
@@ -562,31 +558,62 @@ const StudentResources = () => {
                       });
                       setShowEditModal(true);
                     }}
+                    className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-100"
+                    title="Edit Resource"
                   >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    icon={Trash2}
-                    iconPosition="left"
-                    className="flex-1 text-red-500 hover:bg-red-50 font-bold text-xs py-1.5 !rounded-xl"
-                    onClick={() => {
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedResource(resource);
                       setShowDeleteModal(true);
                     }}
+                    className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+                    title="Delete Resource"
                   >
-                    Remove
-                  </Button>
-                </>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               )}
-              {activeTab === 'history' && !resource.userRated && !isOwner && (
+              <div className="flex items-center gap-1.5 text-gray-400 bg-gray-50/50 px-2 py-1 rounded-lg border border-gray-100">
+                <Download className="w-3.5 h-3.5" />
+                <span className="text-xs font-black">{resource.downloadCount || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 mt-auto pt-6">
+            <Button
+              variant="primary"
+              icon={Download}
+              iconPosition="left"
+              className="flex-1 !rounded-xl font-bold py-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all text-xs tracking-wide bg-blue-600 hover:bg-blue-700"
+              onClick={() => handleDownload(resource._id)}
+            >
+              Get
+            </Button>
+            <Button
+              variant="outline"
+              icon={Eye}
+              iconPosition="left"
+              className="flex-1 !rounded-xl font-bold py-2 border-gray-100 text-gray-500 hover:bg-gray-50 transition-all text-xs"
+              onClick={() => navigate(`/student/resources/${resource._id}`)}
+            >
+              View
+            </Button>
+          </div>
+
+          {/* Contextual actions */}
+          {showActions && activeTab === 'history' && !resource.userRated && !isOwner && (
+            <div className="flex gap-2 mt-2">
                 <Button
                   size="sm"
                   variant="ghost"
                   icon={Star}
                   iconPosition="left"
-                  className="flex-1 text-amber-500 hover:bg-amber-50 font-bold text-xs py-1.5 !rounded-xl"
+                  className="flex-1 text-amber-500 hover:bg-amber-50 font-bold text-xs py-1.5 !rounded-lg border border-amber-100"
                   onClick={() => {
                     setSelectedResource(resource);
                     setShowRatingModal(true);
@@ -594,7 +621,6 @@ const StudentResources = () => {
                 >
                   Rate Now
                 </Button>
-              )}
             </div>
           )}
         </div>
@@ -603,9 +629,9 @@ const StudentResources = () => {
   };
 
   const tabs = [
-    { id: 'all', label: 'All Resources', icon: FileText },
-    { id: 'my-uploads', label: 'My Uploads', icon: Upload },
-    { id: 'history', label: 'Download History', icon: History },
+    { id: 'all', label: 'All Resources', icon: FileText, count: counts.all },
+    { id: 'my-uploads', label: 'My Uploads', icon: Upload, count: counts.uploads },
+    { id: 'history', label: 'Download History', icon: History, count: counts.history },
     { id: 'ai-suggestions', label: 'AI Suggestions', icon: Sparkles },
   ];
 
@@ -754,6 +780,15 @@ const StudentResources = () => {
                 <span className="inline-flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`} />
                   {tab.label}
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className={`px-2 py-0.5 text-[10px] rounded-full ${
+                      activeTab === tab.id
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </span>
               </button>
             );
@@ -818,8 +853,8 @@ const StudentResources = () => {
                   key={index} 
                   className="flex flex-col h-full border border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-white group relative"
                 >
-                  <div className="p-6 pt-8 flex-1 flex flex-col">
-                    <div className="w-12 h-12 mb-5 rounded-2xl flex items-center justify-center shadow-inner bg-blue-50 text-blue-600">
+                  <div className="p-4 pt-2 flex-1 flex flex-col">
+                    <div className="w-10 h-10 mb-3 rounded-xl flex items-center justify-center shadow-inner bg-blue-50 text-blue-600">
                       {suggestion.isGeneric ? (
                         <Globe className="w-6 h-6" />
                       ) : (
@@ -834,18 +869,18 @@ const StudentResources = () => {
                         </Badge>
                       </div>
                       
-                      <h3 className="text-lg font-extrabold text-[#0a3d62] leading-tight mb-3 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-3 group-hover:text-blue-600 transition-colors">
                         {suggestion.title}
                       </h3>
                       
-                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-3 mb-6 font-medium">
+                      <p className="text-[13px] text-gray-500 leading-relaxed line-clamp-2 mb-4 font-medium">
                         {suggestion.description}
                       </p>
                     </div>
 
-                    <div className="h-px bg-gray-50 my-5" />
+                    <div className="h-px bg-gray-50 my-3" />
 
-                    <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center justify-between mt-auto pt-6">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                           <span className="text-[10px] font-bold text-gray-400">AI</span>
@@ -909,7 +944,7 @@ const StudentResources = () => {
               </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredResources.map((resource) => (
                 <ResourceCard key={resource._id} resource={resource} />
               ))}
