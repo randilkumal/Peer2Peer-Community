@@ -125,11 +125,11 @@ const AdminResources = () => {
 
       setResources(all);
       setStats({
-        total: all.filter(r => !(r.status === "approved" && r.pendingUpdate?.status === "pending")).length,
-        pending: all.filter((r) => r.status === "pending" || r.pendingUpdate?.status === "pending").length,
+        total: all.filter(r => !(r.status === "approved" && r.pendingUpdate?.status === "pending" && r.pendingUpdate?.requestedAt)).length,
+        pending: all.filter((r) => r.status === "pending" || (r.pendingUpdate?.status === "pending" && r.pendingUpdate?.requestedAt)).length,
         pendingNew: all.filter((r) => r.status === "pending").length,
-        pendingUpdates: all.filter((r) => r.status === "approved" && r.pendingUpdate?.status === "pending").length,
-        approved: all.filter((r) => r.status === "approved" && r.pendingUpdate?.status !== "pending").length,
+        pendingUpdates: all.filter((r) => r.status === "approved" && r.pendingUpdate?.status === "pending" && r.pendingUpdate?.requestedAt).length,
+        approved: all.filter((r) => r.status === "approved" && !(r.pendingUpdate?.status === "pending" && r.pendingUpdate?.requestedAt)).length,
         rejected: all.filter((r) => r.status === "rejected").length,
       });
     } catch (error) {
@@ -299,7 +299,7 @@ const AdminResources = () => {
   };
 
   const getStatusBadge = (resource) => {
-    if (resource.status === "approved" && resource.pendingUpdate?.status === "pending") {
+    if (resource.status === "approved" && resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt) {
       return <Badge variant="warning">UPDATE PENDING</Badge>;
     }
     const variants = {
@@ -320,7 +320,7 @@ const AdminResources = () => {
       // Handle sub-tabs when in "pending" status
       if (selectedStatus === "pending") {
         if (pendingSubTab === "new" && resource.status !== "pending") return false;
-        if (pendingSubTab === "updates" && !(resource.status === "approved" && resource.pendingUpdate?.status === "pending")) return false;
+        if (pendingSubTab === "updates" && !(resource.status === "approved" && resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt)) return false;
       }
 
       if (!searchQuery.trim()) return true;

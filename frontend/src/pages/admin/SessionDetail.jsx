@@ -160,9 +160,12 @@ const AdminSessionDetail = () => {
     );
   }
 
-  const studentRequests = session.pendingRequests?.filter((r) => r.role === "student") || [];
-  const expertRequests = session.pendingRequests?.filter((r) => r.role === "expert") || [];
   const students = session.participants || [];
+  const studentRequests = (session.pendingRequests?.filter((r) => r.role === "student") || [])
+    .filter(req => !students.some(p => String(p._id || p) === String(req.user?._id || req.user)));
+  
+  const expertRequests = (session.pendingRequests?.filter((r) => r.role === "expert") || [])
+    .filter(req => String(req.user?._id || req.user) !== String(session.expert?._id || session.expert));
 
   return (
     <DashboardLayout>

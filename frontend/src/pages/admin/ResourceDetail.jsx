@@ -328,17 +328,17 @@ const AdminResourceDetail = () => {
           </div>
         </div>
 
-        {(resource.status === "pending" || resource.pendingUpdate?.status === "pending") && isAdmin && (
+        {(resource.status === "pending" || (resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt)) && isAdmin && (
           <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <Clock className="h-6 w-6 text-yellow-600 mt-1" />
                 <div>
                   <h3 className="font-semibold text-yellow-900">
-                    {resource.pendingUpdate?.status === "pending" ? "Pending Update Review" : "Pending New Resource Approval"}
+                    {resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt ? "Pending Update Review" : "Pending New Resource Approval"}
                   </h3>
                   <p className="text-sm text-yellow-700">
-                    {resource.pendingUpdate?.status === "pending" 
+                    {resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt 
                       ? "The resource owner has requested an update. Please review the changes below."
                       : "This resource is waiting for review. Please approve or reject it."}
                   </p>
@@ -369,7 +369,7 @@ const AdminResourceDetail = () => {
         )}
 
         {/* Display Pending Update details if applicable */}
-        {resource.pendingUpdate?.status === "pending" && isAdmin && (
+        {resource.pendingUpdate?.status === "pending" && resource.pendingUpdate?.requestedAt && isAdmin && (
           <Card className="mb-4 border-blue-200 bg-blue-50">
             <h3 className="mb-4 font-bold text-blue-900 flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />

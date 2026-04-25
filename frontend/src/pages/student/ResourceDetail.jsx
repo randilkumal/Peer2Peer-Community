@@ -7,6 +7,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import FileViewer from '../../components/common/FileViewer';
+import Modal from '../../components/common/Modal';
 import API from '../../utils/api';
 import { 
   FileText, 
@@ -48,6 +49,12 @@ const StudentResourceDetail = () => {
     fileType: '',
     downloadUrl: ''
   });
+
+  // Rating state
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitLoading, setRatingSubmitLoading] = useState(false);
 
   useEffect(() => {
     fetchResourceDetails();
@@ -113,6 +120,36 @@ const StudentResourceDetail = () => {
       fileType: resource.fileType,
       downloadUrl: `/resources/${id}/download`
     });
+  };
+
+  const handleRateResource = async () => {
+    if (rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    if (ratingComment.trim().length > 500) {
+      toast.error("Comment must be 500 characters or less");
+      return;
+    }
+
+    try {
+      setRatingSubmitLoading(true);
+      await API.post("/reviews/resource", {
+        resourceId: id,
+        rating: Number(rating),
+        comment: ratingComment.trim(),
+      });
+      toast.success("Rating submitted successfully");
+      setShowRatingModal(false);
+      setRating(0);
+      setRatingComment("");
+      await fetchResourceDetails(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to submit rating");
+    } finally {
+      setRatingSubmitLoading(false);
+    }
   };
 
 
@@ -222,8 +259,19 @@ const StudentResourceDetail = () => {
                       <Eye className="w-4 h-4" />
                       <span>{resource.viewCount || 0} views</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <div 
+                      className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 -ml-2 rounded-lg transition-colors" 
+                      title="Click to rate this resource"
+                      onClick={() => setShowRatingModal(true)}
+                    >
+                      <div className="flex gap-0.5 mr-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star 
+                            key={s} 
+                            className={`w-3.5 h-3.5 ${s <= Math.round(resource.averageRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`} 
+                          />
+                        ))}
+                      </div>
                       <span className="font-bold text-gray-900">{resource.averageRating?.toFixed(1) || '0.0'}</span>
                       <span className="text-gray-400 text-xs mt-0.5">({reviews.length})</span>
                     </div>
@@ -273,12 +321,31 @@ const StudentResourceDetail = () => {
                 >
                   View Content
                 </Button>
+                <Button
+                  variant="ghost"
+                  icon={Star}
+                  iconPosition="left"
+                  onClick={() => setShowRatingModal(true)}
+                  className="!rounded-lg font-bold py-2 px-6 text-gray-600 hover:bg-gray-100 transition-all text-xs justify-center"
+                >
+                  Rate Resource
+                </Button>
               </div>
             </Card>
 
-            {/* Reviews & Ratings Section */}
             <Card className="p-8 border-gray-200/60 shadow-sm rounded-xl">
-              <h2 className="text-lg font-bold text-gray-900 mb-8 font-primary">Reviews & Ratings</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-lg font-bold text-gray-900 font-primary">Reviews & Ratings</h2>
+                <Button 
+                  size="sm"
+                  variant="primary"
+                  icon={MessageSquare}
+                  onClick={() => setShowRatingModal(true)}
+                  className="!rounded-lg"
+                >
+                  Write a Review
+                </Button>
+              </div>
               
               <div className="flex flex-col lg:flex-row gap-12 items-start bg-gray-50/30 rounded-2xl p-8 border border-gray-100">
                 {/* Score Display */}
@@ -411,6 +478,76 @@ const StudentResourceDetail = () => {
           fileType={viewerState.fileType}
           downloadUrl={viewerState.downloadUrl}
         />
+
+        {/* Rating Modal */}
+        <Modal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          title="Rate Resource"
+          footer={
+            <div className="flex gap-2 justify-end w-full">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRatingModal(false)}
+                disabled={ratingSubmitLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRateResource} 
+                loading={ratingSubmitLoading}
+              >
+                Submit Rating
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-6 py-2">
+            <p className="text-sm text-gray-600">
+              Your feedback helps other students find the best resources.
+            </p>
+            
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Your Rating
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="focus:outline-none transition-transform active:scale-95"
+                  >
+                    <Star
+                      className={`w-10 h-10 ${
+                        star <= rating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-200"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Comment (Optional)
+              </label>
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                placeholder="Share your thoughts about this resource..."
+                rows={4}
+                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm"
+              />
+              <p className="text-[10px] text-right text-gray-400">
+                {ratingComment.length}/500 characters
+              </p>
+            </div>
+          </div>
+        </Modal>
       </div>
     </DashboardLayout>
   );
