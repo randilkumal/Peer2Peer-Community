@@ -92,11 +92,10 @@ const resourceSchema = new mongoose.Schema({
     title: String,
     description: String,
     moduleCode: String,
-    type: String, // Keeping track of type as well
+    type: { type: String }, // Keeping track of type as well
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending'
+      enum: ['pending', 'approved', 'rejected']
     },
     requestedAt: Date,
     rejectionReason: String
@@ -107,7 +106,7 @@ const resourceSchema = new mongoose.Schema({
       title: String,
       description: String,
       moduleCode: String,
-      type: String,
+      type: { type: String },
       approvedAt: { type: Date, default: Date.now },
       approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     }

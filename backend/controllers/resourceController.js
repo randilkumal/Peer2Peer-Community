@@ -310,7 +310,8 @@ exports.updateResource = async (req, res) => {
       });
     }
     
-    const isOwner = resource.uploadedBy.toString() === req.user.id;
+    const userId = (req.user?._id || req.user?.id)?.toString();
+    const isOwner = userId && resource.uploadedBy.toString() === userId;
     const isAdmin = req.user.role === 'admin';
 
     if (!isOwner && !isAdmin) {
@@ -320,7 +321,9 @@ exports.updateResource = async (req, res) => {
       });
     }
 
-    const { title, description, type, moduleCode } = req.body;
+    // Accept both `type` and `resourceType` from clients (frontend uses `type` today)
+    const { title, description, type, resourceType, moduleCode } = req.body;
+    const resolvedType = type || resourceType;
     let fileUrl = resource.fileUrl; // Keep old initially
     let fileName = resource.fileName;
     let fileSize = resource.fileSize;
@@ -335,10 +338,10 @@ exports.updateResource = async (req, res) => {
 
     if (isAdmin) {
       // Admins bypass pending queue
-      if (title) resource.title = title;
-      if (description !== undefined) resource.description = description;
-      if (type) resource.type = type;
-      if (moduleCode) resource.moduleCode = moduleCode;
+      if (title !== undefined) resource.title = String(title).trim();
+      if (description !== undefined) resource.description = String(description);
+      if (resolvedType) resource.type = resolvedType;
+      if (moduleCode !== undefined) resource.moduleCode = String(moduleCode).trim().toUpperCase();
       
       if (req.file) {
         resource.fileUrl = fileUrl;
@@ -352,10 +355,10 @@ exports.updateResource = async (req, res) => {
     } else {
       // Owners (students/experts) -> goes to pending Update
       resource.pendingUpdate = {
-        title: title || resource.title,
-        description: description !== undefined ? description : resource.description,
-        type: type || resource.type,
-        moduleCode: moduleCode || resource.moduleCode,
+        title: title !== undefined ? String(title).trim() : resource.title,
+        description: description !== undefined ? String(description) : resource.description,
+        type: resolvedType || resource.type,
+        moduleCode: moduleCode !== undefined ? String(moduleCode).trim().toUpperCase() : resource.moduleCode,
         status: 'pending',
         requestedAt: new Date()
       };
@@ -607,8 +610,8 @@ exports.approveResource = async (req, res) => {
       });
     }
 
-    // If it has a pending update
-    if (resource.pendingUpdate && resource.pendingUpdate.status === 'pending') {
+    // If it is an update to an already approved resource
+    if (resource.status === 'approved' && resource.pendingUpdate && resource.pendingUpdate.status === 'pending') {
       // Archive current version to history
       resource.versionHistory.push({
         version: resource.currentVersion,
@@ -656,6 +659,7 @@ exports.approveResource = async (req, res) => {
 
     resource.status = 'approved';
     resource.rejectionReason = undefined;
+    resource.pendingUpdate = undefined;
     await resource.save();
 
     await resource.populate('uploadedBy', 'name email profilePicture role fullName');
@@ -704,7 +708,7 @@ exports.rejectResource = async (req, res) => {
     }
 
     // Checking if rejecting a pending update vs rejecting original upload
-    if (resource.pendingUpdate && resource.pendingUpdate.status === 'pending') {
+    if (resource.status === 'approved' && resource.pendingUpdate && resource.pendingUpdate.status === 'pending') {
       resource.pendingUpdate.status = 'rejected';
       resource.pendingUpdate.rejectionReason = reason.trim();
       await resource.save();
@@ -730,6 +734,7 @@ exports.rejectResource = async (req, res) => {
 
     resource.status = 'rejected';
     resource.rejectionReason = reason.trim();
+    resource.pendingUpdate = undefined;
     await resource.save();
 
     await resource.populate('uploadedBy', 'name email profilePicture role fullName');
