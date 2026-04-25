@@ -6,46 +6,6 @@ const GroupTable = require('../models/GroupTable');
 const Group = require('../models/Group');
 const User = require('../models/User');
 
-// --- TROUBLESHOOTING ROUTES ---
-router.get('/ping', (req, res) => res.json({ success: true, message: 'Group router is alive' }));
-
-// @route   POST /api/groups/project-metadata/:id
-// @desc    Update GroupTable details (title, description, deadline, etc.)
-// @access  Lecturer (own), Admin
-router.post('/project-metadata/:id', protect, authorize('lecturer', 'admin'), async (req, res) => {
-  try {
-    const { 
-      assignmentTitle, description, registrationDeadline,
-      academicYear, period, yearLevel, semester, specialization
-    } = req.body;
-
-    const groupTable = await GroupTable.findById(req.params.id);
-    if (!groupTable) return res.status(404).json({ success: false, message: 'Project not found' });
-
-    if (req.user.role === 'lecturer' && groupTable.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not allowed to edit this assignment' });
-    }
-
-    // Update fields if provided
-    if (assignmentTitle) groupTable.assignmentTitle = assignmentTitle;
-    if (description !== undefined) groupTable.description = description;
-    if (registrationDeadline) groupTable.registrationDeadline = registrationDeadline;
-    if (academicYear) groupTable.academicYear = academicYear;
-    if (period) groupTable.period = period;
-    if (yearLevel) groupTable.yearLevel = yearLevel;
-    if (semester) groupTable.semester = semester;
-    if (specialization) groupTable.specialization = specialization;
-
-    await groupTable.save();
-
-    res.json({ success: true, message: 'Assignment updated successfully', groupTable });
-  } catch (error) {
-    console.error('Update metadata error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update assignment', error: error.message });
-  }
-});
-// -------------------------------
-
 function studentMatchesGroupTable(user, gt) {
   if (!user || !gt) return false;
 

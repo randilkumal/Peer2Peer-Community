@@ -65,6 +65,10 @@ const sessionRequestRoutes = require('./routes/sessionRequests');
 const reviewRoutes = require('./routes/reviews');
 const groupRoutes = require('./routes/group');
 
+// Models & Middleware for direct routes
+const GroupTable = require('./models/GroupTable');
+const { protect, authorize } = require('./middleware/auth');
+
 // Placeholder handler for unimplemented routes
 const toBeImplemented = (req, res) => {
   res.status(200).json({
@@ -84,6 +88,40 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/session-requests', sessionRequestRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/groups', groupRoutes);
+
+// Direct metadata update route to avoid 404 router issues
+app.post('/api/groups/project-metadata/:id', protect, authorize('lecturer', 'admin'), async (req, res) => {
+  try {
+    const { 
+      assignmentTitle, description, registrationDeadline,
+      academicYear, period, yearLevel, semester, specialization
+    } = req.body;
+
+    const groupTable = await GroupTable.findById(req.params.id);
+    if (!groupTable) return res.status(404).json({ success: false, message: 'Project not found' });
+
+    if (req.user.role === 'lecturer' && groupTable.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not allowed to edit this assignment' });
+    }
+
+    // Update fields if provided
+    if (assignmentTitle) groupTable.assignmentTitle = assignmentTitle;
+    if (description !== undefined) groupTable.description = description;
+    if (registrationDeadline) groupTable.registrationDeadline = registrationDeadline;
+    if (academicYear) groupTable.academicYear = academicYear;
+    if (period) groupTable.period = period;
+    if (yearLevel) groupTable.yearLevel = yearLevel;
+    if (semester) groupTable.semester = semester;
+    if (specialization) groupTable.specialization = specialization;
+
+    await groupTable.save();
+
+    res.json({ success: true, message: 'Assignment updated successfully', groupTable });
+  } catch (error) {
+    console.error('Update metadata error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update assignment', error: error.message });
+  }
+});
 
 // ── Unimplemented Routes (Placeholders) ──────────────────
 app.use('/api/sessions', toBeImplemented);

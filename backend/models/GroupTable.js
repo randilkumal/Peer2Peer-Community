@@ -16,6 +16,10 @@ const groupTableSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  description: {
+    type: String,
+    trim: true
+  },
   
   // Academic Context (denormalized for easy filtering)
   academicYear: {
