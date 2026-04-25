@@ -3,11 +3,11 @@ import PublicFooter from './PublicFooter';
 
 const PublicLayout = ({ children }) => {
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
       <PublicNavbar />
       
-      {/* Main content wrapper with top padding to account for fixed navbar */}
-      <main className="flex-grow pt-20 flex flex-col">
+      {/* Full-width main content area */}
+      <main className="flex-grow pt-16">
         {children}
       </main>
 

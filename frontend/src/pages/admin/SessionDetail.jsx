@@ -32,6 +32,7 @@ const AdminSessionDetail = () => {
   const [session, setSession] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState("students");
 
   const fetchSession = async (silent = false) => {
     try {
@@ -158,6 +159,13 @@ const AdminSessionDetail = () => {
       </DashboardLayout>
     );
   }
+
+  const students = session.participants || [];
+  const studentRequests = (session.pendingRequests?.filter((r) => r.role === "student") || [])
+    .filter(req => !students.some(p => String(p._id || p) === String(req.user?._id || req.user)));
+  
+  const expertRequests = (session.pendingRequests?.filter((r) => r.role === "expert") || [])
+    .filter(req => String(req.user?._id || req.user) !== String(session.expert?._id || session.expert));
 
   return (
     <DashboardLayout>
@@ -294,58 +302,133 @@ const AdminSessionDetail = () => {
               </div>
             </Card>
 
-            {session.pendingRequests && session.pendingRequests.filter(r => r.role === 'expert').length > 0 && (
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-primary-600" />
-                  Volunteer Experts
-                </h3>
+            <Card>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Details</h3>
+
+              <div className="mb-4 flex gap-2 border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab("students")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeDetailTab === "students"
+                      ? "border-primary-600 text-primary-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Students ({students.length + studentRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab("experts")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeDetailTab === "experts"
+                      ? "border-primary-600 text-primary-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Experts ({(session.expert ? 1 : 0) + expertRequests.length})
+                </button>
+              </div>
+
+              {activeDetailTab === "students" && (
                 <div className="space-y-4">
-                  {session.pendingRequests.filter(r => r.role === 'expert').map((req) => (
-                    <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg gap-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{req.user?.fullName}</p>
-                        <p className="text-sm text-gray-600">{req.user?.email}</p>
-                        <p className="text-xs text-gray-500 font-mono mt-1">ID: {req.user?._id}</p>
-                        {req.reason && (
-                          <div className="mt-2 bg-white p-2 rounded border border-gray-100">
-                            <span className="font-medium text-xs text-gray-500 uppercase tracking-wider block mb-1">Reason</span>
-                            <p className="text-sm text-gray-700">"{req.reason}"</p>
+                  {students.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-semibold text-gray-700">Joined Students</p>
+                      <div className="space-y-2">
+                        {students.map((student) => (
+                          <div key={student._id} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p className="font-medium text-gray-900">{student.fullName || "Unnamed student"}</p>
+                            <p className="text-sm text-gray-600">{student.email || "No email"}</p>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        {req.status === 'pending' ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              loading={actionLoading === `reject-${req._id}`}
-                              onClick={() => handleRejectExpert(req._id)}
-                            >
-                              Reject
-                            </Button>
-                            <Button
-                              size="sm"
-                              loading={actionLoading === `approve-${req._id}`}
-                              onClick={() => handleApproveExpert(req._id)}
-                            >
-                              Accept
-                            </Button>
-                          </>
-                        ) : req.status === 'approved' ? (
-                          <Badge variant="success">Accepted</Badge>
-                        ) : req.status === 'rejected' ? (
-                          <Badge variant="danger">Rejected</Badge>
-                        ) : (
-                          <Badge variant="default" className="capitalize">{req.status}</Badge>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {studentRequests.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-sm font-semibold text-gray-700">Student Requests</p>
+                      <div className="space-y-2">
+                        {studentRequests.map((req) => (
+                          <div key={req._id} className="rounded-lg border border-gray-200 bg-white p-3 flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-gray-900">{req.user?.fullName || "Unnamed student"}</p>
+                              <p className="text-sm text-gray-600">{req.user?.email || "No email"}</p>
+                            </div>
+                            <Badge variant="default" className="capitalize">{req.status || "pending"}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {students.length === 0 && studentRequests.length === 0 && (
+                    <p className="text-sm text-gray-500">No student records available for this session yet.</p>
+                  )}
                 </div>
-              </Card>
-            )}
+              )}
+
+              {activeDetailTab === "experts" && (
+                <div className="space-y-4">
+                  {session.expert && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                      <p className="text-sm font-semibold text-green-800 mb-1">Assigned Expert</p>
+                      <p className="font-medium text-gray-900">{session.expert.fullName || "Unnamed expert"}</p>
+                      <p className="text-sm text-gray-700">{session.expert.email || "No email"}</p>
+                    </div>
+                  )}
+
+                  {expertRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {expertRequests.map((req) => (
+                        <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg gap-4">
+                          <div>
+                            <p className="font-semibold text-gray-900">{req.user?.fullName || "Unnamed expert"}</p>
+                            <p className="text-sm text-gray-600">{req.user?.email || "No email"}</p>
+                            {req.reason && (
+                              <div className="mt-2 bg-white p-2 rounded border border-gray-100">
+                                <span className="font-medium text-xs text-gray-500 uppercase tracking-wider block mb-1">Reason</span>
+                                <p className="text-sm text-gray-700">"{req.reason}"</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            {req.status === "pending" ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  loading={actionLoading === `reject-${req._id}`}
+                                  onClick={() => handleRejectExpert(req._id)}
+                                >
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  loading={actionLoading === `approve-${req._id}`}
+                                  onClick={() => handleApproveExpert(req._id)}
+                                >
+                                  Accept
+                                </Button>
+                              </>
+                            ) : req.status === "approved" ? (
+                              <Badge variant="success">Accepted</Badge>
+                            ) : req.status === "rejected" ? (
+                              <Badge variant="danger">Rejected</Badge>
+                            ) : (
+                              <Badge variant="default" className="capitalize">{req.status}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : !session.expert ? (
+                    <p className="text-sm text-gray-500">No expert requests yet.</p>
+                  ) : null}
+                </div>
+              )}
+            </Card>
           </div>
 
           <div>
