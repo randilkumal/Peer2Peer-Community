@@ -6,12 +6,15 @@ import API from '../../utils/api';
 import toast from 'react-hot-toast';
 import { 
   ChevronRight, Search, Filter, MoreVertical, 
-  Sparkles, Check, AlertCircle, UploadCloud, Trash2
+  Sparkles, Check, AlertCircle, UploadCloud, Trash2, CalendarClock
 } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import { exportGroupsToExcel } from '../../utils/excelExport';
 import Button from '../../components/common/Button';
-import { DownloadCloud } from 'lucide-react';
+import { DownloadCloud, Edit2, Save, X, CalendarClock as CalendarIcon } from 'lucide-react';
+import { YEAR_LEVELS, SEMESTERS, SPECIALIZATIONS } from '../../utils/constants';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
 
 const GroupTableDetail = () => {
   const { id } = useParams();
@@ -30,6 +33,9 @@ const GroupTableDetail = () => {
   // State for the manual dropdowns mapping student ID to selected group ID
   const [assigningStudentId, setAssigningStudentId] = useState(null);
   const [deletingAssignment, setDeletingAssignment] = useState(false);
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false);
+  const [editedMetadata, setEditedMetadata] = useState(null);
+  const [savingMetadata, setSavingMetadata] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -138,6 +144,43 @@ const GroupTableDetail = () => {
     exportGroupsToExcel(project, groups);
   };
 
+  const startEditingMetadata = () => {
+    setEditedMetadata({
+      assignmentTitle: project.assignmentTitle,
+      description: project.description || '',
+      registrationDeadline: project.registrationDeadline ? new Date(project.registrationDeadline).toISOString().split('T')[0] : '',
+      academicYear: project.academicYear,
+      period: project.period,
+      yearLevel: project.yearLevel,
+      semester: project.semester,
+      specialization: project.specialization
+    });
+    setIsEditingMetadata(true);
+  };
+
+  const handleMetadataChange = (e) => {
+    const { name, value, type } = e.target;
+    setEditedMetadata(prev => ({
+      ...prev,
+      [name]: type === 'number' ? Number(value) : value
+    }));
+  };
+
+  const saveMetadata = async () => {
+    try {
+      setSavingMetadata(true);
+      await API.post(`/groups/project-metadata/${id}`, editedMetadata);
+      toast.success('Assignment details updated!');
+      setIsEditingMetadata(false);
+      fetchData();
+    } catch (error) {
+      console.error('Save metadata error:', error);
+      toast.error('Failed to update details');
+    } finally {
+      setSavingMetadata(false);
+    }
+  };
+
   if (loading || !project) {
     return (
       <DashboardLayout>
@@ -194,21 +237,182 @@ const GroupTableDetail = () => {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-4">
-            <div className="max-w-xl">
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Group Formation</h1>
-              <p className="text-gray-500 text-lg leading-relaxed">
-                Manage student project assignments for the <span className="font-semibold text-gray-700">{project.assignmentTitle}</span>.
-              </p>
+            <div className="flex-1">
+              {isEditingMetadata ? (
+                <div className="mb-4">
+                  <Input
+                    label="Assignment Title"
+                    name="assignmentTitle"
+                    value={editedMetadata.assignmentTitle}
+                    onChange={handleMetadataChange}
+                    className="text-2xl font-bold"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Group Formation</h1>
+                  <p className="text-gray-500 text-lg leading-relaxed mb-4">
+                    Manage student project assignments for the <span className="font-semibold text-gray-700">{project.assignmentTitle}</span>.
+                  </p>
+                </>
+              )}
+
+              {/* DETAILS SECTION */}
+              <div className="flex flex-wrap gap-y-4 gap-x-8 mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                {isEditingMetadata ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+                    <Select
+                      label="Academic Year"
+                      name="academicYear"
+                      value={editedMetadata.academicYear}
+                      onChange={handleMetadataChange}
+                      options={[2024, 2025, 2026, 2027].map(y => ({ value: y, label: String(y) }))}
+                    />
+                    <Select
+                      label="Period"
+                      name="period"
+                      value={editedMetadata.period}
+                      onChange={handleMetadataChange}
+                      options={[
+                        { value: 'Jan-May', label: 'Jan-May' },
+                        { value: 'Jun-Nov', label: 'Jun-Nov' }
+                      ]}
+                    />
+                    <Select
+                      label="Year Level"
+                      name="yearLevel"
+                      value={editedMetadata.yearLevel}
+                      onChange={handleMetadataChange}
+                      options={YEAR_LEVELS.map(y => ({ value: y, label: `Year ${y}` }))}
+                    />
+                    <Select
+                      label="Semester"
+                      name="semester"
+                      value={editedMetadata.semester}
+                      onChange={handleMetadataChange}
+                      options={SEMESTERS.map(s => ({ value: s, label: `Semester ${s}` }))}
+                    />
+                    <Select
+                      label="Specialization"
+                      name="specialization"
+                      value={editedMetadata.specialization}
+                      onChange={handleMetadataChange}
+                      options={[
+                        { value: 'All', label: 'All Specializations' },
+                        ...SPECIALIZATIONS.map(s => ({ value: s, label: s }))
+                      ]}
+                    />
+                    <div className="flex flex-col">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Registration Deadline</label>
+                      <input
+                        type="date"
+                        name="registrationDeadline"
+                        value={editedMetadata.registrationDeadline}
+                        onChange={handleMetadataChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Academic context</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">
+                          Year {project.yearLevel}
+                        </span>
+                        <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">
+                          Sem {project.semester}
+                        </span>
+                        <span className="px-2 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold border border-orange-100">
+                          {project.period}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Specialization</span>
+                      <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100 w-fit">
+                        {project.specialization === 'All' ? 'All Specializations' : project.specialization}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Deadline</span>
+                      <div className="flex items-center gap-1.5 text-gray-700 font-bold text-xs">
+                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                        {formatDate(project.registrationDeadline)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</span>
+                      <div className="flex items-center gap-1.5">
+                        {isPublished ? (
+                          <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">Published</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-100">Draft / Open</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {isEditingMetadata ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 font-bold uppercase tracking-wider text-[10px]">Project description</label>
+                  <textarea
+                    name="description"
+                    value={editedMetadata.description}
+                    onChange={handleMetadataChange}
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none text-sm italic"
+                    placeholder="Provide details about the assignment..."
+                  ></textarea>
+                </div>
+              ) : (
+                project.description && (
+                  <div className="mb-6 p-4 bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Project description</span>
+                    <p className="text-sm text-gray-600 leading-relaxed italic">
+                      "{project.description}"
+                    </p>
+                  </div>
+                )
+              )}
+
               <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleDeleteAssignment}
-                  disabled={deletingAssignment}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {deletingAssignment ? 'Deleting…' : 'Delete assignment'}
-                </button>
+                {isEditingMetadata ? (
+                  <>
+                    <Button onClick={saveMetadata} loading={savingMetadata} icon={Save}>
+                      Save Changes
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingMetadata(false)} icon={X}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={startEditingMetadata}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border border-primary-200 text-primary-700 hover:bg-primary-50 transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Edit details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteAssignment}
+                      disabled={deletingAssignment}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deletingAssignment ? 'Deleting…' : 'Delete assignment'}
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={handleExportExcel}

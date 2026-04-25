@@ -40,7 +40,8 @@ const CreateGroupTable = () => {
     specialization: 'All',
     numberOfGroups: 5,
     groupSize: 4,
-    registrationDeadline: ''
+    registrationDeadline: '',
+    description: ''
   });
 
   // Pre-select the first teaching module assigned to the logged-in teacher
@@ -154,6 +155,20 @@ const CreateGroupTable = () => {
                     placeholder="e.g. SE3020"
                     required
                   />
+                </div>
+                {/* Assignment Description */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="Provide details about the assignment, submission instructions, etc."
+                  ></textarea>
                 </div>
               </div>
 
