@@ -1,5 +1,6 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
+
 const { protect, authorize } = require('../middleware/auth');
 const GroupTable = require('../models/GroupTable');
 const Group = require('../models/Group');
@@ -72,15 +73,15 @@ function sanitizeGroupsForStudent(groups, currentUserId) {
 router.post('/project', protect, authorize('lecturer', 'admin'), async (req, res) => {
   try {
     const { 
-      module, assignmentTitle, academicYear, period, 
+      module, assignmentTitle, description, academicYear, period, 
       yearLevel, semester, specialization, 
       numberOfGroups, groupSize, registrationDeadline 
     } = req.body;
-
     // Create GroupTable
     const groupTable = await GroupTable.create({
       module,
       assignmentTitle,
+      description,
       academicYear,
       period,
       yearLevel,
@@ -217,17 +218,12 @@ router.get('/project/:id', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/groups/project/:id/unassigned
-// @desc    Get all students enrolled in the module who are NOT in any group of this project
-// @access  Lecturer
 router.get('/project/:id/unassigned', protect, authorize('lecturer', 'admin'), async (req, res) => {
   try {
     const groupTable = await GroupTable.findById(req.params.id);
     if (!groupTable) return res.status(404).json({ success: false, message: 'Project not found' });
 
     // Find all students explicitly enrolled in this module OR sharing the same year/semester context
-    // Actually, let's just find students who match the year/semester/specialization context for simplicity,
-    // OR whose `enrolledModules` array includes this module code.
     const query = {
       role: 'student',
       $or: [
@@ -240,7 +236,6 @@ router.get('/project/:id/unassigned', protect, authorize('lecturer', 'admin'), a
       ]
     };
     
-    // For safety, let's just rely on users with role student.
     const eligibleStudents = await User.find(query).select('fullName email studentId phone');
 
     // Get all groups for this project to build a list of assigned student IDs
@@ -258,6 +253,27 @@ router.get('/project/:id/unassigned', protect, authorize('lecturer', 'admin'), a
     res.json({ success: true, unassigned });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch unassigned students', error: error.message });
+  }
+});
+
+// @route   PATCH /api/groups/project/:id/publish
+// @desc    Final publish page with warnings check
+// @access  Lecturer
+router.patch('/project/:id/publish', protect, authorize('lecturer', 'admin'), async (req, res) => {
+  try {
+    const groupTable = await GroupTable.findById(req.params.id);
+    if (!groupTable) return res.status(404).json({ success: false, message: 'Project not found' });
+
+    groupTable.status = 'published';
+    groupTable.publishedAt = new Date();
+    await groupTable.save();
+
+    // TO-DO: Send notifications to all students in the groups
+    // This can be done by creating a Notification document if we had one.
+
+    res.json({ success: true, message: 'Groups published successfully', groupTable });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to publish groups', error: error.message });
   }
 });
 

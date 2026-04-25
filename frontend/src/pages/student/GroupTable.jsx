@@ -45,15 +45,15 @@ const StudentGroupTable = () => {
   }, [projectId]);
 
   useEffect(() => {
-    if (user && !indiv.fullName && !indiv.studentId) {
-      setIndiv({
-        fullName: user.fullName || '',
-        studentId: user.studentId || '',
-        email: user.email || '',
-        phone: user.phone || ''
-      });
+    if (user) {
+      setIndiv(prev => ({
+        fullName: prev.fullName || user.fullName || '',
+        studentId: prev.studentId || user.studentId || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || ''
+      }));
     }
-  }, [user, indiv.fullName, indiv.studentId]);
+  }, [user]);
 
   const fetchData = async () => {
     try {
@@ -253,6 +253,15 @@ const StudentGroupTable = () => {
                 <CalendarClock className="w-4 h-4" />
                 Registration deadline: {formatDate(groupTable.registrationDeadline)}
               </p>
+              
+              {groupTable.description && (
+                <div className="mt-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Project description</span>
+                  <p className="text-sm text-gray-600 leading-relaxed italic">
+                    "{groupTable.description}"
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl shadow-sm border border-gray-100">
